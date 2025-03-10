@@ -169,15 +169,17 @@ You can add custom headers to your webhook requests:
 
 ## Webhook Security
 
-For client-side usage, the webhook proxy is **required** to ensure the security of your credentials. This follows the same philosophy as the Resend proxy, where never exposing API keys or sensitive credentials in the frontend is an essential practice.
+For client-side usage, the webhook proxy is **strongly recommended** to ensure the security of your credentials. This follows the same philosophy as the Resend proxy, where exposing API keys or sensitive credentials in the frontend should be avoided.
 
-1. **Configure the Webhook Proxy**: For client-side usage, you must set up a webhook proxy:
+> **Security Warning**: When using webhooks without a proxy in client-side code, any headers or credentials you include will be visible to anyone using your application. The component will display warnings in the console when sensitive information is detected.
+
+1. **Configure the Webhook Proxy** (Recommended for client-side):
 
 ```jsx
 <WaitlistForm
   resendAudienceId="your_audience_id"
   resendProxyEndpoint="/api/resend-proxy"
-  webhookProxyEndpoint="/api/webhook-proxy" // Required for client-side
+  webhookProxyEndpoint="/api/webhook-proxy" // Strongly recommended for client-side
   webhooks={[
     {
       url: "https://your-api.com/webhook",
@@ -190,7 +192,7 @@ For client-side usage, the webhook proxy is **required** to ensure the security 
 />
 ```
 
-2. **Create the Proxy Endpoint**: Set up the proxy endpoint on your server:
+2. **Create the Proxy Endpoint**:
 
 ```jsx
 // pages/api/webhook-proxy.js (Next.js Pages Router)
@@ -225,7 +227,7 @@ export async function POST(req) {
 }
 ```
 
-3. **Server-Side Alternative**: For server-side components, the proxy is optional, as the server can safely call webhooks directly:
+3. **Server-Side Usage**: For server-side components, the proxy is optional, as the server can safely call webhooks directly:
 
 ```jsx
 import { ServerWaitlist } from 'react-waitlist/server';

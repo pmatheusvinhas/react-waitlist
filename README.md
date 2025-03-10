@@ -55,7 +55,7 @@ export default function Page() {
 
 ## Proxy API Setup
 
-For client-side usage, you need to set up proxy endpoints to protect your sensitive credentials:
+For client-side usage, proxy endpoints are strongly recommended to protect your sensitive credentials:
 
 ### Resend Proxy (for API key protection)
 
@@ -121,7 +121,7 @@ export async function POST(req) {
 }
 ```
 
-> **Important**: For client-side usage, both `resendProxyEndpoint` and `webhookProxyEndpoint` are required to ensure the security of your credentials. Server-side components can safely call APIs and webhooks directly.
+> **Security Recommendation**: For client-side usage, using proxy endpoints is strongly recommended to protect sensitive credentials. The component will display warnings in the console when potential security risks are detected.
 
 ## Customization
 

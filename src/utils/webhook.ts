@@ -75,13 +75,54 @@ export const sendWebhook = async (
   }
 
   try {
-    // In browser environments, webhookProxyEndpoint is required for security
+    // In browser environments, check for webhookProxyEndpoint
     if (isBrowser) {
       if (!webhookProxyEndpoint) {
-        console.error('webhookProxyEndpoint is required for client-side webhook delivery. Use server-side components or set up a webhook proxy.');
-        return null;
+        // Show warning but continue with direct call
+        console.warn(
+          'SECURITY WARNING: Calling webhooks directly from the client-side exposes your headers and credentials. ' +
+          'Consider using webhookProxyEndpoint for better security. ' +
+          'See https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/webhooks.md for more information.'
+        );
+
+        // Check for sensitive headers
+        if (config.headers) {
+          const sensitiveHeaderPatterns = [
+            /api[-_]?key/i,
+            /auth/i,
+            /token/i,
+            /secret/i,
+            /password/i,
+            /credential/i,
+          ];
+          
+          const hasSensitiveHeaders = Object.keys(config.headers).some(header => 
+            sensitiveHeaderPatterns.some(pattern => pattern.test(header))
+          );
+          
+          if (hasSensitiveHeaders) {
+            console.error(
+              'SECURITY RISK: Your webhook contains headers that appear to contain sensitive information. ' +
+              'These will be visible to anyone using your application. ' +
+              'Use webhookProxyEndpoint to secure these credentials.'
+            );
+          }
+        }
+
+        // Direct webhook delivery (not recommended for client-side)
+        const response = await fetch(config.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...config.headers,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        return response;
       }
 
+      // Use proxy (recommended for client-side)
       const proxyPayload = {
         destination: config.url,
         headers: config.headers,

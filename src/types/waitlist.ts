@@ -172,7 +172,7 @@ export interface WaitlistProps {
   /** Resend API key (only use in server components or with proxy) */
   apiKey?: string;
   /** Resend Audience ID */
-  resendAudienceId: string;
+  resendAudienceId?: string;
   /** Endpoint for Resend proxy API (for client-side usage) */
   resendProxyEndpoint?: string;
   /** Endpoint for webhook proxy API (for secure webhook delivery) */

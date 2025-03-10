@@ -20,7 +20,7 @@ export interface UseWaitlistFormOptions {
   /** Mapping to Resend API fields */
   resendMapping?: ResendMapping;
   /** Resend Audience ID */
-  resendAudienceId: string;
+  resendAudienceId?: string;
   /** Endpoint for Resend proxy API */
   resendProxyEndpoint?: string;
   /** Endpoint for webhook proxy API */
@@ -88,12 +88,12 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     onError,
   } = options;
 
-  // Initialize Resend audience hook
-  const resendAudience = useResendAudience({
+  // Initialize Resend audience hook - only if resendAudienceId is provided
+  const resendAudience = resendAudienceId ? useResendAudience({
     apiKey,
     audienceId: resendAudienceId,
     proxyEndpoint: resendProxyEndpoint,
-  });
+  }) : null;
 
   // Create event manager
   const eventManager = useRef(createEventManager()).current;
@@ -297,7 +297,7 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
       }
       
       // Send data to Resend API using the hook
-      const data = await resendAudience.addContact(contactData);
+      const data = await resendAudience?.addContact(contactData);
       
       // Set success state
       setFormState('success');
