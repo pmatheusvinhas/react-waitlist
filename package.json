@@ -17,7 +17,8 @@
     "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "deploy-storybook": "storybook build && gh-pages -d storybook-static"
   },
   "keywords": [
     "react",
@@ -47,6 +48,7 @@
     "@types/jest-axe": "^3.5.9",
     "@types/react": "^19.0.10",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
+    "gh-pages": "^6.3.0",
     "jest": "^29.7.0",
     "jest-axe": "^10.0.0",
     "jest-environment-jsdom": "^29.7.0",
@@ -60,12 +62,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/react-waitlist.git"
+    "url": "https://github.com/pmatheusvinhas/react-waitlist.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/react-waitlist/issues"
+    "url": "https://github.com/pmatheusvinhas/react-waitlist/issues"
   },
-  "homepage": "https://github.com/yourusername/react-waitlist#readme",
+  "homepage": "https://pmatheusvinhas.github.io/react-waitlist",
   "msw": {
     "workerDirectory": [
       "public"
