@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, CSSProperties } from 'react';
 import { Field, WaitlistProps, A11yConfig, SecurityConfig, AnalyticsConfig, ResendMapping, ThemeConfig } from '../types';
 import { validateForm, isFormValid, generateHoneypotFieldName, isLikelyBot, getHoneypotStyles, trackEvent } from '../utils';
-import { mergeTheme, getAnimationStyles } from '../styles';
+import { mergeTheme, getAnimationStyles, AnimationConfig, defaultAnimation } from '../styles';
 import { AriaProvider, useAria, useAnnounce, useAriaLabels, useReducedMotion } from '../a11y';
+import { useResendAudience, ResendContact } from '../hooks/useResendAudience';
 
 /**
  * Default fields for the waitlist form
@@ -21,6 +22,44 @@ const defaultFields: Field[] = [
  * Form states
  */
 type FormState = 'idle' | 'submitting' | 'success' | 'error';
+
+/**
+ * Option type for select fields
+ */
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+/**
+ * Extended field type with additional properties
+ */
+interface ExtendedField extends Omit<Field, 'options'> {
+  checkboxLabel?: string;
+  options?: (string | SelectOption)[];
+}
+
+/**
+ * Extended theme with component-specific styles
+ */
+interface ExtendedTheme extends ThemeConfig {
+  container?: CSSProperties;
+  title?: CSSProperties;
+  description?: CSSProperties;
+  form?: CSSProperties;
+  fieldContainer?: CSSProperties;
+  label?: CSSProperties;
+  input?: CSSProperties;
+  inputError?: CSSProperties;
+  checkboxContainer?: CSSProperties;
+  checkbox?: CSSProperties;
+  checkboxLabel?: CSSProperties;
+  button?: CSSProperties;
+  buttonLoading?: CSSProperties;
+  errorMessage?: CSSProperties;
+  formError?: CSSProperties;
+  required?: CSSProperties;
+}
 
 /**
  * Inner form component that uses accessibility context
@@ -48,12 +87,19 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   style,
 }) => {
   // Merge user theme with default theme
-  const theme = mergeTheme(userTheme);
+  const theme = mergeTheme(userTheme) as ExtendedTheme;
   
   // Get accessibility hooks
   const ariaLabels = useAriaLabels();
   const announce = useAnnounce();
   const prefersReducedMotion = useReducedMotion();
+  
+  // Initialize Resend audience hook
+  const resendAudience = useResendAudience({
+    apiKey,
+    audienceId,
+    proxyEndpoint,
+  });
   
   // Form state
   const [formState, setFormState] = useState<FormState>('idle');
@@ -162,9 +208,8 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
     
     try {
       // Prepare data for Resend API
-      const contactData: Record<string, any> = {
+      const contactData: ResendContact = {
         email: formValues[resendMapping?.email || 'email'] as string,
-        audienceId,
       };
       
       // Add first name if available
@@ -182,47 +227,13 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
         contactData.metadata = {};
         resendMapping.metadata.forEach((fieldName) => {
           if (formValues[fieldName] !== undefined) {
-            contactData.metadata[fieldName] = formValues[fieldName];
+            contactData.metadata![fieldName] = formValues[fieldName];
           }
         });
       }
       
-      // Send data to Resend API
-      let response;
-      
-      if (proxyEndpoint) {
-        // Use proxy endpoint for client-side
-        response = await fetch(proxyEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            audienceId,
-            contact: contactData,
-          }),
-        });
-      } else if (apiKey) {
-        // Direct API call (only for server components)
-        // This should not be used in client-side code
-        response = await fetch('https://api.resend.com/audiences/contacts', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify(contactData),
-        });
-      } else {
-        throw new Error('Either apiKey or proxyEndpoint must be provided');
-      }
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to join waitlist');
-      }
-      
-      const data = await response.json();
+      // Send data to Resend API using the hook
+      const data = await resendAudience.addContact(contactData);
       
       // Set success state
       setFormState('success');
@@ -249,31 +260,31 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
       setErrorMessage(errorMsg);
       
       // Announce error
-      announce(ariaLabels.errorMessage || 'Error joining the waitlist: ' + errorMsg, true);
+      announce(ariaLabels.errorMessage || `Error: ${errorMsg}`, true);
       
       // Track error event
       trackEvent(analytics, { 
         event: 'error',
         properties: { 
-          message: errorMsg,
-          email: formValues[resendMapping?.email || 'email'] 
+          message: errorMsg 
         }
       });
       
       // Call onError callback
       if (onError && error instanceof Error) {
         onError(error);
+      } else if (onError) {
+        onError(new Error(errorMsg));
       }
     }
   };
   
-  // Reset form
+  // Reset form to initial state
   const resetForm = () => {
     setFormState('idle');
     setErrorMessage('');
-    formStartTime.current = Date.now();
     
-    // Reset form values to defaults
+    // Reset form values
     const initialValues: Record<string, string | boolean> = {};
     fields.forEach((field) => {
       if (field.defaultValue !== undefined) {
@@ -285,83 +296,162 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
       }
     });
     setFormValues(initialValues);
+    
+    // Reset validation results
     setValidationResults({});
     
+    // Reset security measures
+    formStartTime.current = Date.now();
+    honeypotFieldName.current = generateHoneypotFieldName();
+    
     // Announce form reset
-    announce('Form reset. You can join with another email.', false);
+    announce('Form has been reset', false);
   };
   
-  // Get animation styles
-  const animationStyles = getAnimationStyles(
-    { type: 'fadeSlide', duration: 300 },
-    'enter',
-    prefersReducedMotion
-  );
+  // Get animation styles based on user preferences
+  const animationConfig: AnimationConfig = prefersReducedMotion ? { type: 'none' } : defaultAnimation;
+  const animations = {
+    fadeIn: getAnimationStyles(animationConfig, 'enter'),
+  };
   
-  // Render success state
+  // Render form based on state
   if (formState === 'success') {
     return (
       <div
         className={className}
         style={{
-          fontFamily: theme.typography?.fontFamily,
-          color: theme.colors?.text,
-          ...animationStyles,
+          ...(theme.container || {}),
           ...style,
         }}
+        role="status"
+        aria-live="polite"
       >
-        <h2 
-          style={{ color: theme.colors?.primary }}
-          aria-live="polite"
-        >
-          {successTitle}
-        </h2>
-        <p>{successDescription}</p>
-        <button
-          onClick={resetForm}
-          style={{
-            backgroundColor: theme.colors?.secondary,
-            color: 'white',
-            border: 'none',
-            padding: `${theme.spacing?.sm} ${theme.spacing?.md}`,
-            borderRadius: theme.borders?.radius?.md,
-            cursor: 'pointer',
-            fontWeight: theme.typography?.fontWeights?.medium,
-            ...animationStyles,
-          }}
-        >
-          Join another email
-        </button>
+        <div style={animations.fadeIn}>
+          <h2 style={theme.title || {}}>{successTitle}</h2>
+          <p style={theme.description || {}}>{successDescription}</p>
+        </div>
       </div>
     );
   }
   
-  // Render form
+  // Render the form
   return (
     <div
       className={className}
       style={{
-        fontFamily: theme.typography?.fontFamily,
-        color: theme.colors?.text,
+        ...(theme.container || {}),
         ...style,
       }}
     >
-      {title && <h2 style={{ color: theme.colors?.primary }}>{title}</h2>}
-      {description && <p>{description}</p>}
+      <h2 style={theme.title || {}}>{title}</h2>
+      <p style={theme.description || {}}>{description}</p>
       
-      <form 
+      <form
         onSubmit={handleSubmit}
-        aria-label={ariaLabels.form}
-        noValidate
+        style={theme.form || {}}
+        aria-label={ariaLabels.form || 'Waitlist signup form'}
       >
-        {/* Honeypot field for bot detection */}
+        {/* Visible form fields */}
+        {fields.map((field) => {
+          const extendedField = field as ExtendedField;
+          const validation = validationResults[field.name];
+          const isInvalid = validation && !validation.valid;
+          
+          return (
+            <div key={field.name} style={theme.fieldContainer || {}}>
+              <label
+                htmlFor={field.name}
+                style={theme.label || {}}
+              >
+                {field.label}
+                {field.required && <span style={theme.required || { color: 'red' }}> *</span>}
+              </label>
+              
+              {field.type === 'select' ? (
+                <select
+                  id={field.name}
+                  name={field.name}
+                  value={formValues[field.name] as string}
+                  onChange={handleChange}
+                  required={field.required}
+                  aria-invalid={isInvalid}
+                  aria-describedby={isInvalid ? `${field.name}-error` : undefined}
+                  style={{
+                    ...(theme.input || {}),
+                    ...(isInvalid ? (theme.inputError || {}) : {}),
+                  }}
+                >
+                  <option value="">{field.placeholder || 'Select an option'}</option>
+                  {field.options?.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                  {extendedField.options?.filter(opt => typeof opt !== 'string').map((option) => {
+                    const typedOption = option as SelectOption;
+                    return (
+                      <option key={typedOption.value} value={typedOption.value}>
+                        {typedOption.label}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : field.type === 'checkbox' ? (
+                <div style={theme.checkboxContainer || {}}>
+                  <input
+                    id={field.name}
+                    name={field.name}
+                    type="checkbox"
+                    checked={formValues[field.name] as boolean}
+                    onChange={handleChange}
+                    required={field.required}
+                    aria-invalid={isInvalid}
+                    aria-describedby={isInvalid ? `${field.name}-error` : undefined}
+                    style={theme.checkbox || {}}
+                  />
+                  <span style={theme.checkboxLabel || {}}>{extendedField.checkboxLabel || field.label}</span>
+                </div>
+              ) : (
+                <input
+                  id={field.name}
+                  name={field.name}
+                  type={field.type}
+                  value={formValues[field.name] as string}
+                  onChange={handleChange}
+                  placeholder={field.placeholder}
+                  required={field.required}
+                  aria-invalid={isInvalid}
+                  aria-describedby={isInvalid ? `${field.name}-error` : undefined}
+                  style={{
+                    ...(theme.input || {}),
+                    ...(isInvalid ? (theme.inputError || {}) : {}),
+                  }}
+                />
+              )}
+              
+              {isInvalid && (
+                <div
+                  id={`${field.name}-error`}
+                  style={theme.errorMessage || {}}
+                  role="alert"
+                >
+                  {validation.message}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        
+        {/* Honeypot field (invisible to users, used to detect bots) */}
         {security.enableHoneypot && (
           <div style={getHoneypotStyles()}>
-            <label htmlFor={honeypotFieldName.current}>Do not fill this field</label>
+            <label htmlFor={honeypotFieldName.current}>
+              Please leave this field empty
+            </label>
             <input
-              type="text"
               id={honeypotFieldName.current}
               name={honeypotFieldName.current}
+              type="text"
               onChange={handleChange}
               tabIndex={-1}
               aria-hidden="true"
@@ -370,173 +460,26 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
           </div>
         )}
         
-        {/* Form fields */}
-        {fields.map((field) => (
-          <div
-            key={field.name}
-            style={{
-              marginBottom: theme.spacing?.md,
-            }}
-          >
-            <label
-              htmlFor={field.name}
-              style={{
-                display: 'block',
-                marginBottom: theme.spacing?.xs,
-                fontWeight: theme.typography?.fontWeights?.medium,
-              }}
-            >
-              {field.label}
-              {field.required && (
-                <span style={{ color: theme.colors?.error }}> *</span>
-              )}
-            </label>
-            
-            {field.type === 'select' ? (
-              <select
-                id={field.name}
-                name={field.name}
-                value={formValues[field.name] as string}
-                onChange={handleChange}
-                required={field.required}
-                aria-required={field.required}
-                aria-invalid={validationResults[field.name]?.valid === false}
-                aria-describedby={
-                  validationResults[field.name]?.valid === false
-                    ? `${field.name}-error`
-                    : undefined
-                }
-                style={{
-                  width: '100%',
-                  padding: theme.spacing?.sm,
-                  borderRadius: theme.borders?.radius?.md,
-                  border: `1px solid ${
-                    validationResults[field.name]?.valid === false
-                      ? theme.colors?.error
-                      : theme.colors?.gray?.[300]
-                  }`,
-                  fontSize: theme.typography?.fontSizes?.md,
-                }}
-              >
-                <option value="">Select {field.label}</option>
-                {field.options?.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            ) : field.type === 'checkbox' ? (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  id={field.name}
-                  name={field.name}
-                  checked={!!formValues[field.name]}
-                  onChange={handleChange}
-                  required={field.required}
-                  aria-required={field.required}
-                  aria-invalid={validationResults[field.name]?.valid === false}
-                  aria-describedby={
-                    validationResults[field.name]?.valid === false
-                      ? `${field.name}-error`
-                      : undefined
-                  }
-                  style={{
-                    marginRight: theme.spacing?.xs,
-                  }}
-                />
-                <label
-                  htmlFor={field.name}
-                  style={{
-                    fontWeight: 'normal',
-                  }}
-                >
-                  {field.label}
-                </label>
-              </div>
-            ) : (
-              <input
-                type={field.type}
-                id={field.name}
-                name={field.name}
-                value={formValues[field.name] as string}
-                onChange={handleChange}
-                placeholder={field.placeholder}
-                required={field.required}
-                aria-required={field.required}
-                aria-invalid={validationResults[field.name]?.valid === false}
-                aria-describedby={
-                  validationResults[field.name]?.valid === false
-                    ? `${field.name}-error`
-                    : undefined
-                }
-                aria-label={field.name === 'email' ? ariaLabels.emailField : undefined}
-                style={{
-                  width: '100%',
-                  padding: theme.spacing?.sm,
-                  borderRadius: theme.borders?.radius?.md,
-                  border: `1px solid ${
-                    validationResults[field.name]?.valid === false
-                      ? theme.colors?.error
-                      : theme.colors?.gray?.[300]
-                  }`,
-                  fontSize: theme.typography?.fontSizes?.md,
-                }}
-              />
-            )}
-            
-            {validationResults[field.name]?.valid === false && (
-              <div
-                id={`${field.name}-error`}
-                style={{
-                  color: theme.colors?.error,
-                  fontSize: theme.typography?.fontSizes?.sm,
-                  marginTop: theme.spacing?.xs,
-                }}
-                role="alert"
-              >
-                {validationResults[field.name]?.message}
-              </div>
-            )}
-          </div>
-        ))}
-        
+        {/* Submit button */}
         <button
           type="submit"
-          disabled={formState === 'submitting'}
-          aria-label={ariaLabels.submitButton}
-          aria-busy={formState === 'submitting'}
           style={{
-            backgroundColor: theme.colors?.primary,
-            color: 'white',
-            border: 'none',
-            padding: `${theme.spacing?.sm} ${theme.spacing?.md}`,
-            borderRadius: theme.borders?.radius?.md,
-            cursor: formState === 'submitting' ? 'wait' : 'pointer',
-            fontWeight: theme.typography?.fontWeights?.medium,
-            opacity: formState === 'submitting' ? 0.7 : 1,
-            width: '100%',
+            ...(theme.button || {}),
+            ...(formState === 'submitting' ? (theme.buttonLoading || {}) : {}),
           }}
+          disabled={formState === 'submitting'}
+          aria-label={ariaLabels.submitButton || 'Submit to join waitlist'}
         >
           {formState === 'submitting' ? 'Submitting...' : submitText}
         </button>
         
+        {/* Error message */}
         {formState === 'error' && (
           <div
-            style={{
-              color: theme.colors?.error,
-              marginTop: theme.spacing?.md,
-              fontSize: theme.typography?.fontSizes?.sm,
-            }}
+            style={theme.formError || {}}
             role="alert"
-            aria-live="assertive"
           >
-            {errorMessage || 'An error occurred. Please try again.'}
+            {errorMessage}
           </div>
         )}
       </form>

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Field, SecurityConfig, ResendMapping } from '../types';
 import { validateForm, isFormValid, generateHoneypotFieldName, isLikelyBot, trackEvent } from '../utils';
+import { Resend } from 'resend';
+import { useResendAudience, ResendContact } from './useResendAudience';
 
 /**
  * Form states
@@ -71,6 +73,13 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     onSuccess,
     onError,
   } = options;
+
+  // Initialize Resend audience hook
+  const resendAudience = useResendAudience({
+    apiKey,
+    audienceId,
+    proxyEndpoint,
+  });
 
   // Form state
   const [formState, setFormState] = useState<FormState>('idle');
@@ -173,9 +182,8 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     
     try {
       // Prepare data for Resend API
-      const contactData: Record<string, any> = {
+      const contactData: ResendContact = {
         email: formValues[resendMapping?.email || 'email'] as string,
-        audienceId,
       };
       
       // Add first name if available
@@ -193,47 +201,13 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
         contactData.metadata = {};
         resendMapping.metadata.forEach((fieldName) => {
           if (formValues[fieldName] !== undefined) {
-            contactData.metadata[fieldName] = formValues[fieldName];
+            contactData.metadata![fieldName] = formValues[fieldName];
           }
         });
       }
       
-      // Send data to Resend API
-      let response;
-      
-      if (proxyEndpoint) {
-        // Use proxy endpoint for client-side
-        response = await fetch(proxyEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            audienceId,
-            contact: contactData,
-          }),
-        });
-      } else if (apiKey) {
-        // Direct API call (only for server components)
-        // This should not be used in client-side code
-        response = await fetch('https://api.resend.com/audiences/contacts', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify(contactData),
-        });
-      } else {
-        throw new Error('Either apiKey or proxyEndpoint must be provided');
-      }
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to join waitlist');
-      }
-      
-      const data = await response.json();
+      // Send data to Resend API using the hook
+      const data = await resendAudience.addContact(contactData);
       
       // Set success state
       setFormState('success');

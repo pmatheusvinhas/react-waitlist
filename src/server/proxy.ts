@@ -1,3 +1,5 @@
+import { Resend } from 'resend';
+
 /**
  * Configuration for the Resend proxy
  */
@@ -26,6 +28,9 @@ type RequestHandler = (req: any, res: any) => Promise<void>;
  */
 export function createResendProxy(config: ResendProxyConfig): RequestHandler {
   const { apiKey, allowedAudiences, rateLimit } = config;
+  
+  // Initialize Resend client
+  const resend = new Resend(apiKey);
   
   // Store IP addresses and their request timestamps for rate limiting
   const ipRequests: Record<string, number[]> = {};
@@ -66,9 +71,12 @@ export function createResendProxy(config: ResendProxyConfig): RequestHandler {
       // Parse request body
       const body = req.body;
       
+      // Handle different actions
+      const action = body.action || 'create';
+      
       // Validate required fields
-      if (!body || !body.audienceId || !body.contact || !body.contact.email) {
-        return res.status(400).json({ error: 'Missing required fields' });
+      if (!body || !body.audienceId) {
+        return res.status(400).json({ error: 'Missing audienceId' });
       }
       
       // Validate audience ID if allowedAudiences is specified
@@ -78,27 +86,93 @@ export function createResendProxy(config: ResendProxyConfig): RequestHandler {
         }
       }
       
-      // Prepare data for Resend API
-      const contactData = {
-        ...body.contact,
-        audienceId: body.audienceId,
-      };
+      // Execute the appropriate action
+      let result;
       
-      // Call Resend API
-      const response = await fetch('https://api.resend.com/audiences/contacts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(contactData),
-      });
+      switch (action) {
+        case 'create':
+          if (!body.email) {
+            return res.status(400).json({ error: 'Missing email' });
+          }
+          
+          // Create contact with basic fields
+          const createOptions: any = {
+            email: body.email,
+            firstName: body.firstName,
+            lastName: body.lastName,
+            unsubscribed: body.unsubscribed,
+            audienceId: body.audienceId,
+          };
+          
+          // Add metadata if provided
+          if (body.metadata) {
+            createOptions.metadata = body.metadata;
+          }
+          
+          result = await resend.contacts.create(createOptions);
+          break;
+          
+        case 'update':
+          if (!body.id && !body.email) {
+            return res.status(400).json({ error: 'Missing id or email' });
+          }
+          
+          // Update contact with basic fields
+          const updateOptions: any = {
+            audienceId: body.audienceId,
+          };
+          
+          // Add id or email
+          if (body.id) {
+            updateOptions.id = body.id;
+          } else {
+            updateOptions.email = body.email;
+          }
+          
+          // Add optional fields if provided
+          if (body.firstName !== undefined) updateOptions.firstName = body.firstName;
+          if (body.lastName !== undefined) updateOptions.lastName = body.lastName;
+          if (body.unsubscribed !== undefined) updateOptions.unsubscribed = body.unsubscribed;
+          if (body.metadata) updateOptions.metadata = body.metadata;
+          
+          result = await resend.contacts.update(updateOptions);
+          break;
+          
+        case 'remove':
+          if (!body.id && !body.email) {
+            return res.status(400).json({ error: 'Missing id or email' });
+          }
+          
+          result = await resend.contacts.remove({
+            id: body.id,
+            email: body.email,
+            audienceId: body.audienceId,
+          });
+          break;
+          
+        case 'get':
+          if (!body.id && !body.email) {
+            return res.status(400).json({ error: 'Missing id or email' });
+          }
+          
+          result = await resend.contacts.get({
+            id: body.id,
+            audienceId: body.audienceId,
+          });
+          break;
+          
+        case 'list':
+          result = await resend.contacts.list({
+            audienceId: body.audienceId,
+          });
+          break;
+          
+        default:
+          return res.status(400).json({ error: 'Invalid action' });
+      }
       
-      // Get response data
-      const data = await response.json();
-      
-      // Return response with same status code
-      return res.status(response.status).json(data);
+      // Return response
+      return res.status(200).json(result);
     } catch (error) {
       console.error('Resend proxy error:', error);
       return res.status(500).json({ 

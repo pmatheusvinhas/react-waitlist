@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Resend } from 'resend';
 
 /**
  * Contact data for Resend API
@@ -80,12 +81,14 @@ export const useResendAudience = (
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   
+  // Initialize Resend client if API key is provided
+  const resendClient = apiKey ? new Resend(apiKey) : null;
+  
   /**
    * Make a request to the Resend API
    */
   const makeRequest = async <T>(
-    endpoint: string,
-    method: string,
+    action: 'create' | 'update' | 'remove' | 'get' | 'list',
     data?: any
   ): Promise<T> => {
     setLoading(true);
@@ -96,34 +99,78 @@ export const useResendAudience = (
       
       if (proxyEndpoint) {
         // Use proxy endpoint for client-side
-        response = await fetch(`${proxyEndpoint}${endpoint}`, {
+        const endpoint = '/audiences/contacts';
+        let method = 'POST';
+        
+        if (action === 'update') {
+          method = 'PATCH';
+        } else if (action === 'remove') {
+          method = 'DELETE';
+        } else if (action === 'get' || action === 'list') {
+          method = 'GET';
+        }
+        
+        response = await fetch(`${proxyEndpoint}`, {
           method,
           headers: {
             'Content-Type': 'application/json',
           },
-          body: data ? JSON.stringify(data) : undefined,
+          body: data ? JSON.stringify({
+            action,
+            audienceId,
+            ...data
+          }) : undefined,
         });
-      } else if (apiKey) {
-        // Direct API call (only for server components)
-        response = await fetch(`https://api.resend.com${endpoint}`, {
-          method,
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: data ? JSON.stringify(data) : undefined,
-        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to make request to Resend API');
+        }
+        
+        const responseData = await response.json();
+        return responseData as T;
+      } else if (resendClient) {
+        // Use Resend SDK for server-side
+        let result;
+        
+        switch (action) {
+          case 'create':
+            result = await resendClient.contacts.create({
+              ...data,
+              audienceId,
+            });
+            break;
+          case 'update':
+            result = await resendClient.contacts.update({
+              ...data,
+              audienceId,
+            });
+            break;
+          case 'remove':
+            result = await resendClient.contacts.remove({
+              ...data,
+              audienceId,
+            });
+            break;
+          case 'get':
+            result = await resendClient.contacts.get({
+              ...data,
+              audienceId,
+            });
+            break;
+          case 'list':
+            result = await resendClient.contacts.list({
+              audienceId,
+            });
+            break;
+          default:
+            throw new Error('Invalid action');
+        }
+        
+        return result as unknown as T;
       } else {
         throw new Error('Either apiKey or proxyEndpoint must be provided');
       }
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to make request to Resend API');
-      }
-      
-      const responseData = await response.json();
-      return responseData as T;
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Unknown error'));
       throw err;
@@ -136,14 +183,7 @@ export const useResendAudience = (
    * Add a contact to the audience
    */
   const addContact = async (contact: ResendContact): Promise<ResendResponse> => {
-    return makeRequest<ResendResponse>(
-      '/audiences/contacts',
-      'POST',
-      {
-        ...contact,
-        audienceId,
-      }
-    );
+    return makeRequest<ResendResponse>('create', contact);
   };
   
   /**
@@ -153,49 +193,31 @@ export const useResendAudience = (
     id: string,
     contact: Partial<ResendContact>
   ): Promise<ResendResponse> => {
-    return makeRequest<ResendResponse>(
-      '/audiences/contacts',
-      'PATCH',
-      {
-        id,
-        audienceId,
-        ...contact,
-      }
-    );
+    return makeRequest<ResendResponse>('update', {
+      id,
+      ...contact,
+    });
   };
   
   /**
    * Remove a contact from the audience
    */
   const removeContact = async (id: string): Promise<void> => {
-    return makeRequest<void>(
-      '/audiences/contacts',
-      'DELETE',
-      {
-        id,
-        audienceId,
-      }
-    );
+    return makeRequest<void>('remove', { id });
   };
   
   /**
    * Get a contact from the audience
    */
   const getContact = async (id: string): Promise<ResendResponse> => {
-    return makeRequest<ResendResponse>(
-      `/audiences/${audienceId}/contacts/${id}`,
-      'GET'
-    );
+    return makeRequest<ResendResponse>('get', { id });
   };
   
   /**
    * List contacts in the audience
    */
   const listContacts = async (): Promise<ResendResponse[]> => {
-    const response = await makeRequest<{ data: ResendResponse[] }>(
-      `/audiences/${audienceId}/contacts`,
-      'GET'
-    );
+    const response = await makeRequest<{ data: ResendResponse[] }>('list');
     return response.data;
   };
   
