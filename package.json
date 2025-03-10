@@ -1,6 +1,6 @@
 {
   "name": "react-waitlist",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "A customizable waitlist component for React that integrates with Resend audiences",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -18,7 +18,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "deploy-storybook": "storybook build && gh-pages -d storybook-static"
+    "deploy-storybook": "storybook build && gh-pages -d storybook-static",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "react",
@@ -29,18 +30,13 @@
     "component",
     "form"
   ],
-  "author": "",
+  "author": "Paulo M. Vinhas",
   "license": "MIT",
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.26.9",
-    "@babel/preset-env": "^7.26.9",
-    "@babel/preset-react": "^7.26.3",
-    "@babel/preset-typescript": "^7.26.0",
-    "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-typescript": "^12.1.2",
@@ -69,7 +65,12 @@
     "storybook": "^8.6.4",
     "ts-jest": "^29.2.6",
     "ts-loader": "^9.5.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/preset-react": "^7.23.3",
+    "@babel/preset-typescript": "^7.23.3"
   },
   "repository": {
     "type": "git",
