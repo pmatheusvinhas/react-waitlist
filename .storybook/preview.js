@@ -4,6 +4,9 @@ import { handlers } from './mocks';
 // Initialize MSW
 initialize({
   onUnhandledRequest: 'bypass',
+  serviceWorker: {
+    url: '/react-waitlist/mockServiceWorker.js',
+  },
 });
 
 /** @type { import('@storybook/react').Preview } */

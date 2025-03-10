@@ -18,7 +18,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "deploy-storybook": "storybook build && npx msw init storybook-static --save && gh-pages -d storybook-static",
+    "deploy-storybook": "storybook build && npx msw init storybook-static --save && cp .nojekyll storybook-static/ && gh-pages -d storybook-static",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -82,7 +82,8 @@
   "homepage": "https://pmatheusvinhas.github.io/react-waitlist",
   "msw": {
     "workerDirectory": [
-      "public"
+      "public",
+      "storybook-static"
     ]
   }
 }
