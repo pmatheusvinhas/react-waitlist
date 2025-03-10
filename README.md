@@ -31,8 +31,8 @@ import { WaitlistForm } from 'react-waitlist';
 function App() {
   return (
     <WaitlistForm 
-      audienceId="your_audience_id"
-      proxyEndpoint="/api/resend-proxy"
+      resendAudienceId="your_audience_id"
+      resendProxyEndpoint="/api/resend-proxy"
     />
   );
 }
@@ -47,7 +47,7 @@ export default function Page() {
   return (
     <ServerWaitlist 
       apiKey={process.env.RESEND_API_KEY}
-      audienceId="your_audience_id"
+      resendAudienceId="your_audience_id"
     />
   );
 }
@@ -55,7 +55,9 @@ export default function Page() {
 
 ## Proxy API Setup
 
-For client-side usage, you need to set up a proxy endpoint to protect your Resend API key:
+For client-side usage, you need to set up proxy endpoints to protect your sensitive credentials:
+
+### Resend Proxy (for API key protection)
 
 ```jsx
 // pages/api/resend-proxy.js (Next.js Pages Router)
@@ -87,12 +89,44 @@ export async function POST(req) {
 }
 ```
 
+### Webhook Proxy (for secure webhook delivery)
+
+```jsx
+// pages/api/webhook-proxy.js (Next.js Pages Router)
+import { createWebhookProxy } from 'react-waitlist/server';
+
+export default createWebhookProxy({
+  secretKey: process.env.WEBHOOK_SECRET_KEY,
+  allowedDestinations: ['https://your-api.com'],
+});
+```
+
+```jsx
+// app/api/webhook-proxy/route.js (Next.js App Router)
+import { NextResponse } from 'next/server';
+import { createWebhookProxy } from 'react-waitlist/server';
+
+const proxyHandler = createWebhookProxy({
+  secretKey: process.env.WEBHOOK_SECRET_KEY,
+  allowedDestinations: ['https://your-api.com'],
+});
+
+export async function POST(req) {
+  const res = {
+    status: (code) => ({
+      json: (data) => NextResponse.json(data, { status: code }),
+    }),
+  };
+  return await proxyHandler(req, res);
+}
+```
+
 ## Customization
 
 ```jsx
 <WaitlistForm 
-  audienceId="your_audience_id"
-  proxyEndpoint="/api/resend-proxy"
+  resendAudienceId="your_audience_id"
+  resendProxyEndpoint="/api/resend-proxy"
   
   // Content
   title="Join our waitlist"
@@ -133,6 +167,7 @@ export async function POST(req) {
       includeAllFields: true
     }
   ]}
+  webhookProxyEndpoint="/api/webhook-proxy"
   
   // Event callbacks
   onView={({ timestamp }) => console.log('Form viewed at', timestamp)}

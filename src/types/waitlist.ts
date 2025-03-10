@@ -172,9 +172,15 @@ export interface WaitlistProps {
   /** Resend API key (only use in server components or with proxy) */
   apiKey?: string;
   /** Audience ID from Resend */
-  audienceId: string;
-  /** Endpoint for proxy API (for client-side usage) */
+  audienceId?: string;
+  /** Resend Audience ID (replaces audienceId for clarity) */
+  resendAudienceId?: string;
+  /** Endpoint for Resend proxy API (for client-side usage) */
   proxyEndpoint?: string;
+  /** Endpoint for Resend proxy API (replaces proxyEndpoint for clarity) */
+  resendProxyEndpoint?: string;
+  /** Endpoint for webhook proxy API (for secure webhook delivery) */
+  webhookProxyEndpoint?: string;
   /** Title of the waitlist form */
   title?: string;
   /** Description text */

@@ -27,7 +27,8 @@ export const sendWebhook = async (
   event: WebhookEvent,
   data: Record<string, any>,
   resendResponse?: any,
-  error?: Error
+  error?: Error,
+  webhookProxyEndpoint?: string
 ): Promise<Response | null> => {
   // Check if this webhook should be triggered for this event
   if (config.events && !config.events.includes(event)) {
@@ -68,43 +69,63 @@ export const sendWebhook = async (
     };
   }
 
-  // Send the webhook request
   try {
-    const response = await fetch(config.url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...config.headers,
-      },
-      body: JSON.stringify(payload),
-    });
+    // If webhook proxy endpoint is provided, use it for secure delivery
+    if (webhookProxyEndpoint) {
+      const proxyPayload = {
+        destination: config.url,
+        headers: config.headers,
+        payload,
+      };
 
-    // Handle retry logic if configured
-    if (!response.ok && config.retry && config.maxRetries) {
-      // Implement retry logic here
-      // This is a simplified version; a production implementation would use
-      // exponential backoff and more sophisticated retry strategies
-      let retries = 0;
-      while (!response.ok && retries < config.maxRetries) {
-        await new Promise((resolve) => setTimeout(resolve, 1000 * (retries + 1)));
-        const retryResponse = await fetch(config.url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...config.headers,
-          },
-          body: JSON.stringify(payload),
-        });
-        
-        if (retryResponse.ok) {
-          return retryResponse;
+      const response = await fetch(webhookProxyEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(proxyPayload),
+      });
+
+      // No retry logic needed here as the proxy handles retries
+      return response;
+    } else {
+      // Direct webhook delivery (less secure, only for public endpoints)
+      const response = await fetch(config.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...config.headers,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      // Handle retry logic if configured
+      if (!response.ok && config.retry && config.maxRetries) {
+        // Implement retry logic here
+        // This is a simplified version; a production implementation would use
+        // exponential backoff and more sophisticated retry strategies
+        let retries = 0;
+        while (!response.ok && retries < config.maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (retries + 1)));
+          const retryResponse = await fetch(config.url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...config.headers,
+            },
+            body: JSON.stringify(payload),
+          });
+          
+          if (retryResponse.ok) {
+            return retryResponse;
+          }
+          
+          retries++;
         }
-        
-        retries++;
       }
-    }
 
-    return response;
+      return response;
+    }
   } catch (err) {
     console.error('Failed to send webhook:', err);
     return null;
@@ -119,7 +140,8 @@ export const sendWebhooks = async (
   event: WebhookEvent,
   data: Record<string, any>,
   resendResponse?: any,
-  error?: Error
+  error?: Error,
+  webhookProxyEndpoint?: string
 ): Promise<void> => {
   if (!configs || configs.length === 0) {
     return;
@@ -127,6 +149,6 @@ export const sendWebhooks = async (
 
   // Send all webhooks in parallel
   await Promise.all(
-    configs.map((config) => sendWebhook(config, event, data, resendResponse, error))
+    configs.map((config) => sendWebhook(config, event, data, resendResponse, error, webhookProxyEndpoint))
   );
 }; 

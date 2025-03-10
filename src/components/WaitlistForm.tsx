@@ -67,7 +67,10 @@ interface ExtendedTheme extends ThemeConfig {
 const WaitlistFormInner: React.FC<WaitlistProps> = ({
   apiKey,
   audienceId,
+  resendAudienceId,
   proxyEndpoint,
+  resendProxyEndpoint,
+  webhookProxyEndpoint,
   title = 'Join our waitlist',
   description = 'Be the first to know when we launch',
   submitText = 'Join waitlist',
@@ -93,15 +96,19 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   const theme = mergeTheme(userTheme) as ExtendedTheme;
   
   // Get accessibility hooks
-  const ariaLabels = useAriaLabels();
   const announce = useAnnounce();
-  const prefersReducedMotion = useReducedMotion();
+  const ariaLabels = useAriaLabels();
+  const reducedMotion = useReducedMotion();
+  
+  // Get the effective audience ID and proxy endpoint
+  const effectiveAudienceId = resendAudienceId || audienceId || '';
+  const effectiveProxyEndpoint = resendProxyEndpoint || proxyEndpoint;
   
   // Initialize Resend audience hook
   const resendAudience = useResendAudience({
     apiKey,
-    audienceId,
-    proxyEndpoint,
+    audienceId: effectiveAudienceId,
+    proxyEndpoint: effectiveProxyEndpoint,
   });
   
   // Form state
@@ -324,7 +331,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   };
   
   // Get animation styles based on user preferences
-  const animationConfig: AnimationConfig = prefersReducedMotion ? { type: 'none' } : defaultAnimation;
+  const animationConfig: AnimationConfig = reducedMotion ? { type: 'none' } : defaultAnimation;
   const animations = {
     fadeIn: getAnimationStyles(animationConfig, 'enter'),
   };

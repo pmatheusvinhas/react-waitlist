@@ -171,10 +171,64 @@ You can add custom headers to your webhook requests:
 
 When implementing webhook endpoints, consider these security best practices:
 
-1. **Validate the source**: Use custom headers or API keys to verify that requests are coming from your application.
-2. **Use HTTPS**: Always use HTTPS for your webhook endpoints to encrypt data in transit.
-3. **Implement rate limiting**: Protect your endpoints from abuse by implementing rate limiting.
-4. **Validate payload data**: Always validate and sanitize incoming data before processing it.
+1. **Use the Webhook Proxy**: For secure webhook delivery with sensitive headers, use the webhook proxy endpoint:
+
+```jsx
+<WaitlistForm
+  audienceId="your_audience_id"
+  resendProxyEndpoint="/api/resend-proxy"
+  webhookProxyEndpoint="/api/webhook-proxy"
+  webhooks={[
+    {
+      url: "https://your-api.com/webhook",
+      events: ["success"],
+      headers: {
+        "X-API-Key": "your-secret-key" // Safely handled by the proxy
+      }
+    }
+  ]}
+/>
+```
+
+2. **Set up the Webhook Proxy**: Create a webhook proxy endpoint on your server:
+
+```jsx
+// pages/api/webhook-proxy.js (Next.js Pages Router)
+import { createWebhookProxy } from 'react-waitlist/server';
+
+export default createWebhookProxy({
+  secretKey: process.env.WEBHOOK_SECRET_KEY,
+  allowedDestinations: ['https://your-api.com'],
+  defaultHeaders: {
+    'X-Source': 'your-app'
+  }
+});
+```
+
+```jsx
+// app/api/webhook-proxy/route.js (Next.js App Router)
+import { NextResponse } from 'next/server';
+import { createWebhookProxy } from 'react-waitlist/server';
+
+const proxyHandler = createWebhookProxy({
+  secretKey: process.env.WEBHOOK_SECRET_KEY,
+  allowedDestinations: ['https://your-api.com']
+});
+
+export async function POST(req) {
+  const res = {
+    status: (code) => ({
+      json: (data) => NextResponse.json(data, { status: code }),
+    }),
+  };
+  return await proxyHandler(req, res);
+}
+```
+
+3. **Validate the source**: Use custom headers or API keys to verify that requests are coming from your application.
+4. **Use HTTPS**: Always use HTTPS for your webhook endpoints to encrypt data in transit.
+5. **Implement rate limiting**: Protect your endpoints from abuse by implementing rate limiting.
+6. **Validate payload data**: Always validate and sanitize incoming data before processing it.
 
 ## Testing Webhooks
 

@@ -19,10 +19,16 @@ export interface UseWaitlistFormOptions {
   security?: SecurityConfig;
   /** Mapping to Resend API fields */
   resendMapping?: ResendMapping;
-  /** Audience ID from Resend */
-  audienceId: string;
-  /** Endpoint for proxy API (for client-side usage) */
+  /** Audience ID from Resend (deprecated, use resendAudienceId instead) */
+  audienceId?: string;
+  /** Resend Audience ID */
+  resendAudienceId?: string;
+  /** Endpoint for Resend proxy API (deprecated, use resendProxyEndpoint instead) */
   proxyEndpoint?: string;
+  /** Endpoint for Resend proxy API */
+  resendProxyEndpoint?: string;
+  /** Endpoint for webhook proxy API */
+  webhookProxyEndpoint?: string;
   /** Resend API key (only use in server components or with proxy) */
   apiKey?: string;
   /** Analytics configuration */
@@ -75,7 +81,10 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     },
     resendMapping,
     audienceId,
+    resendAudienceId,
     proxyEndpoint,
+    resendProxyEndpoint,
+    webhookProxyEndpoint,
     apiKey,
     analytics,
     webhooks,
@@ -85,11 +94,15 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     onError,
   } = options;
 
+  // Get the effective audience ID and proxy endpoint
+  const effectiveAudienceId = resendAudienceId || audienceId || '';
+  const effectiveProxyEndpoint = resendProxyEndpoint || proxyEndpoint;
+
   // Initialize Resend audience hook
   const resendAudience = useResendAudience({
     apiKey,
-    audienceId,
-    proxyEndpoint,
+    audienceId: effectiveAudienceId,
+    proxyEndpoint: effectiveProxyEndpoint,
   });
 
   // Create event manager
@@ -173,20 +186,20 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     };
   }, [eventManager, onView, onSubmit, onSuccess, onError]);
   
-  // Emit view event on mount
+  // Track view event
   useEffect(() => {
+    // Track analytics event
+    trackEvent(analytics, { event: 'view' });
+    
+    // Send webhooks
+    sendWebhooks(webhooks, 'view', {}, undefined, undefined, webhookProxyEndpoint);
+    
     // Emit view event
     eventManager.emit({
       type: 'view',
       timestamp: new Date().toISOString(),
     });
-    
-    // Track view event with analytics
-    trackEvent(analytics, { event: 'view' });
-    
-    // Send webhooks for view event
-    sendWebhooks(webhooks, 'view', {});
-  }, [eventManager, analytics, webhooks]);
+  }, [analytics, webhooks, eventManager, webhookProxyEndpoint]);
   
   // Handle input change
   const handleChange = (
@@ -226,18 +239,21 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Set submitting state
+    setFormState('submitting');
+    
+    // Track submit event
+    trackEvent(analytics, { event: 'submit', properties: formValues });
+    
+    // Send webhooks
+    sendWebhooks(webhooks, 'submit', formValues, undefined, undefined, webhookProxyEndpoint);
+    
     // Emit submit event
     eventManager.emit({
       type: 'submit',
       timestamp: new Date().toISOString(),
-      formData: formValues,
+      formData: { ...formValues },
     });
-    
-    // Track submit event
-    trackEvent(analytics, { event: 'submit' });
-    
-    // Send webhooks for submit event
-    sendWebhooks(webhooks, 'submit', formValues);
     
     // Validate all fields
     const results = validateForm(fields, formValues);
@@ -263,9 +279,6 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
         return;
       }
     }
-    
-    // Set submitting state
-    setFormState('submitting');
     
     try {
       // Prepare data for Resend API
@@ -303,7 +316,7 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
       eventManager.emit({
         type: 'success',
         timestamp: new Date().toISOString(),
-        formData: formValues,
+        formData: { ...formValues },
         response: data,
       });
       
@@ -315,36 +328,34 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
         }
       });
       
-      // Send webhooks for success event
-      sendWebhooks(webhooks, 'success', formValues, data);
+      // Send webhooks
+      sendWebhooks(webhooks, 'success', formValues, data, undefined, webhookProxyEndpoint);
     } catch (error) {
       // Set error state
       setFormState('error');
       const errorMsg = error instanceof Error ? error.message : 'An unexpected error occurred';
       setErrorMessage(errorMsg);
       
+      // Send webhooks
+      sendWebhooks(
+        webhooks, 
+        'error', 
+        formValues, 
+        undefined, 
+        error instanceof Error ? error : new Error(errorMsg),
+        webhookProxyEndpoint
+      );
+      
       // Emit error event
       eventManager.emit({
         type: 'error',
         timestamp: new Date().toISOString(),
-        formData: formValues,
+        formData: { ...formValues },
         error: {
           message: errorMsg,
-          code: (error as any)?.code,
+          code: error instanceof Error ? (error as any).code : undefined,
         },
       });
-      
-      // Track error event
-      trackEvent(analytics, { 
-        event: 'error',
-        properties: { 
-          message: errorMsg,
-          email: formValues[resendMapping?.email || 'email'] 
-        }
-      });
-      
-      // Send webhooks for error event
-      sendWebhooks(webhooks, 'error', formValues, undefined, error instanceof Error ? error : new Error(errorMsg));
     }
   };
   
