@@ -98,12 +98,12 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   const ariaLabels = useAriaLabels();
   const reducedMotion = useReducedMotion();
   
-  // Initialize Resend audience hook
-  const resendAudience = useResendAudience({
+  // Initialize Resend audience hook - only if resendAudienceId is provided
+  const resendAudience = resendAudienceId ? useResendAudience({
     apiKey,
     audienceId: resendAudienceId,
     proxyEndpoint: resendProxyEndpoint,
-  });
+  }) : null;
   
   // Form state
   const [formState, setFormState] = useState<FormState>('idle');
@@ -211,7 +211,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
     announce('Submitting your information...', false);
     
     try {
-      // Prepare data for Resend API
+      // Prepare contact data for Resend
       const contactData: ResendContact = {
         email: formValues[resendMapping?.email || 'email'] as string,
       };
@@ -236,8 +236,20 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
         });
       }
       
-      // Send data to Resend API using the hook
-      const data = await resendAudience.addContact(contactData);
+      // Send data to Resend API using the hook (if available)
+      let data;
+      if (resendAudience) {
+        data = await resendAudience.addContact(contactData);
+      } else {
+        // If Resend integration is not configured, create a mock response
+        data = {
+          id: `mock_${Date.now()}`,
+          email: contactData.email,
+          firstName: contactData.firstName,
+          lastName: contactData.lastName,
+          createdAt: new Date().toISOString(),
+        };
+      }
       
       // Set success state
       setFormState('success');
