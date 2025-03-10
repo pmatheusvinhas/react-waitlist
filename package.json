@@ -18,7 +18,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "deploy-storybook": "storybook build && gh-pages -d storybook-static",
+    "deploy-storybook": "storybook build && npx msw init storybook-static --save && gh-pages -d storybook-static",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -74,7 +74,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pmatheusvinhas/react-waitlist.git"
+    "url": "git+https://github.com/pmatheusvinhas/react-waitlist.git"
   },
   "bugs": {
     "url": "https://github.com/pmatheusvinhas/react-waitlist/issues"
