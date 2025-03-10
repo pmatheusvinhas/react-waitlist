@@ -7,7 +7,8 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "sideEffects": false,
   "scripts": {
@@ -83,6 +84,7 @@
     "url": "https://github.com/pmatheusvinhas/react-waitlist/issues"
   },
   "homepage": "https://pmatheusvinhas.github.io/react-waitlist",
+  "changelog": "https://github.com/pmatheusvinhas/react-waitlist/blob/main/CHANGELOG.md",
   "msw": {
     "workerDirectory": [
       "public",

@@ -191,6 +191,7 @@ Additional documentation:
 - [Events](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/events.md)
 - [Accessibility](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/accessibility.md)
 - [Security](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/security.md)
+- [Changelog](https://github.com/pmatheusvinhas/react-waitlist/blob/main/CHANGELOG.md)
 
 ## License
 
