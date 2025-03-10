@@ -22,7 +22,7 @@ yarn add react-waitlist
 ## Basic Usage
 
 ```jsx
-import Waitlist from 'react-waitlist';
+import { Waitlist } from 'react-waitlist';
 
 function App() {
   return (
@@ -54,13 +54,33 @@ export default function Page() {
 For client-side usage, you need to set up a proxy endpoint to protect your Resend API key:
 
 ```jsx
-// pages/api/resend-proxy.js (Next.js)
-import { createResendProxy } from 'react-waitlist/proxy';
+// pages/api/resend-proxy.js (Next.js Pages Router)
+import { createResendProxy } from 'react-waitlist/server';
 
 export default createResendProxy({
   apiKey: process.env.RESEND_API_KEY,
   allowedAudiences: ['your_audience_id'],
 });
+```
+
+```jsx
+// app/api/resend-proxy/route.js (Next.js App Router)
+import { NextResponse } from 'next/server';
+import { createResendProxy } from 'react-waitlist/server';
+
+const proxyHandler = createResendProxy({
+  apiKey: process.env.RESEND_API_KEY,
+  allowedAudiences: ['your_audience_id'],
+});
+
+export async function POST(req) {
+  const res = {
+    status: (code) => ({
+      json: (data) => NextResponse.json(data, { status: code }),
+    }),
+  };
+  return await proxyHandler(req, res);
+}
 ```
 
 ## Customization
@@ -109,7 +129,14 @@ export default createResendProxy({
 
 ## Documentation
 
-For full documentation, visit [our documentation site](https://react-waitlist.docs.example.com).
+For full documentation and examples, visit our [Storybook documentation](https://pmatheusvinhas.github.io/react-waitlist/).
+
+Additional documentation:
+- [Getting Started](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/getting-started.md)
+- [API Reference](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/api-reference.md)
+- [Customization](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/customization.md)
+- [Accessibility](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/accessibility.md)
+- [Security](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/security.md)
 
 ## License
 
