@@ -103,6 +103,8 @@ export interface SecurityConfig {
   enableReCaptcha?: boolean;
   /** reCAPTCHA site key */
   reCaptchaSiteKey?: string;
+  /** reCAPTCHA min score (0.0 to 1.0) */
+  reCaptchaMinScore?: number;
   /** Whether to enable honeypot */
   enableHoneypot?: boolean;
   /** Whether to check for submission time (bot detection) */
@@ -177,6 +179,8 @@ export interface WaitlistProps {
   resendProxyEndpoint?: string;
   /** Endpoint for webhook proxy API (for secure webhook delivery) */
   webhookProxyEndpoint?: string;
+  /** Endpoint for reCAPTCHA proxy API (for secure verification) */
+  recaptchaProxyEndpoint?: string;
   /** Title of the waitlist form */
   title?: string;
   /** Description text */

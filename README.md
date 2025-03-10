@@ -6,7 +6,7 @@ A customizable waitlist component for React that integrates with Resend audience
 
 - 🔒 Secure integration with Resend audiences
 - 🎨 Fully customizable UI with theming support
-- 🤖 Bot and spam protection
+- 🤖 Bot and spam protection with reCAPTCHA v3
 - ♿ Accessibility built-in
 - 📊 Analytics tracking
 - 🔌 Easy to integrate with any React application
@@ -121,6 +121,40 @@ export async function POST(req) {
 }
 ```
 
+### reCAPTCHA Proxy (for bot protection)
+
+```jsx
+// pages/api/recaptcha-proxy.js (Next.js Pages Router)
+import { createRecaptchaProxy } from 'react-waitlist/server';
+
+export default createRecaptchaProxy({
+  secretKey: process.env.RECAPTCHA_SECRET_KEY,
+  minScore: 0.5, // Optional, defaults to 0.5
+  allowedActions: ['submit_waitlist'], // Optional
+});
+```
+
+```jsx
+// app/api/recaptcha-proxy/route.js (Next.js App Router)
+import { NextResponse } from 'next/server';
+import { createRecaptchaProxy } from 'react-waitlist/server';
+
+const proxyHandler = createRecaptchaProxy({
+  secretKey: process.env.RECAPTCHA_SECRET_KEY,
+  minScore: 0.5,
+  allowedActions: ['submit_waitlist'],
+});
+
+export async function POST(req) {
+  const res = {
+    status: (code) => ({
+      json: (data) => NextResponse.json(data, { status: code }),
+    }),
+  };
+  return await proxyHandler(req, res);
+}
+```
+
 > **Security Recommendation**: For client-side usage, using proxy endpoints is strongly recommended to protect sensitive credentials. The component will display warnings in the console when potential security risks are detected.
 
 ## Customization
@@ -161,6 +195,16 @@ export async function POST(req) {
     // ...
   }}
   
+  // Security with reCAPTCHA
+  security={{
+    enableReCaptcha: true,
+    reCaptchaSiteKey: "your_recaptcha_site_key",
+    reCaptchaMinScore: 0.5,
+    enableHoneypot: true,
+    checkSubmissionTime: true
+  }}
+  recaptchaProxyEndpoint="/api/recaptcha-proxy"
+  
   // Webhooks
   webhooks={[
     {
@@ -189,6 +233,7 @@ Additional documentation:
 - [Customization](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/customization.md)
 - [Webhooks](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/webhooks.md)
 - [Events](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/events.md)
+- [reCAPTCHA](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/recaptcha.md)
 - [Accessibility](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/accessibility.md)
 - [Security](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/security.md)
 - [Changelog](https://github.com/pmatheusvinhas/react-waitlist/blob/main/CHANGELOG.md)

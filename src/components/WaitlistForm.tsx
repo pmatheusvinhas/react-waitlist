@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, CSSProperties } from 'react';
 import { Field, WaitlistProps, A11yConfig, SecurityConfig, AnalyticsConfig, ResendMapping, ThemeConfig } from '../types';
-import { validateForm, isFormValid, generateHoneypotFieldName, isLikelyBot, getHoneypotStyles, trackEvent } from '../utils';
+import { validateForm, isFormValid, generateHoneypotFieldName, isLikelyBot, getHoneypotStyles, trackEvent, isReCaptchaEnabled } from '../utils';
 import { mergeTheme, getAnimationStyles, AnimationConfig, defaultAnimation } from '../styles';
 import { AriaProvider, useAria, useAnnounce, useAriaLabels, useReducedMotion } from '../a11y';
 import { useResendAudience, ResendContact } from '../hooks/useResendAudience';
+import { useReCaptcha } from '../hooks/useReCaptcha';
 
 /**
  * Default fields for the waitlist form
@@ -69,6 +70,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   resendAudienceId,
   resendProxyEndpoint,
   webhookProxyEndpoint,
+  recaptchaProxyEndpoint,
   title = 'Join our waitlist',
   description = 'Be the first to know when we launch',
   submitText = 'Join waitlist',
@@ -104,6 +106,17 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
     audienceId: resendAudienceId,
     proxyEndpoint: resendProxyEndpoint,
   }) : null;
+  
+  // Initialize reCAPTCHA hook if enabled
+  const reCaptchaEnabled = isReCaptchaEnabled(security);
+  const reCaptcha = reCaptchaEnabled
+    ? useReCaptcha({
+        siteKey: security.reCaptchaSiteKey!,
+        onError: (error) => {
+          console.error('reCAPTCHA error:', error);
+        },
+      })
+    : null;
   
   // Form state
   const [formState, setFormState] = useState<FormState>('idle');
@@ -176,6 +189,14 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
     // Track submit event
     trackEvent(analytics, { event: 'submit' });
     
+    // Call onSubmit callback if provided
+    if (onSubmit) {
+      onSubmit({
+        timestamp: new Date().toISOString(),
+        formData: { ...formValues },
+      });
+    }
+    
     // Validate all fields
     const results = validateForm(fields, formValues);
     setValidationResults(results);
@@ -211,6 +232,50 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
     announce('Submitting your information...', false);
     
     try {
+      // Execute reCAPTCHA if enabled
+      let reCaptchaToken: string | undefined;
+      if (reCaptchaEnabled && reCaptcha?.loaded) {
+        try {
+          reCaptchaToken = await reCaptcha.executeReCaptcha();
+          
+          // Verify token if proxy endpoint is provided
+          if (recaptchaProxyEndpoint && reCaptchaToken) {
+            const verifyResponse = await fetch(recaptchaProxyEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                token: reCaptchaToken,
+                action: 'submit_waitlist',
+              }),
+            });
+            
+            const verifyResult = await verifyResponse.json();
+            
+            if (!verifyResult.success) {
+              console.error('reCAPTCHA verification failed:', verifyResult.error);
+              throw new Error(`reCAPTCHA verification failed: ${verifyResult.error}`);
+            }
+          }
+        } catch (error) {
+          console.error('reCAPTCHA execution failed:', error);
+          setFormState('error');
+          setErrorMessage('Could not verify that you are human. Please try again.');
+          
+          // Call onError callback if provided
+          if (onError) {
+            onError({
+              timestamp: new Date().toISOString(),
+              formData: { ...formValues },
+              error: error instanceof Error ? error : new Error('reCAPTCHA execution failed'),
+            });
+          }
+          
+          return;
+        }
+      }
+      
       // Prepare contact data for Resend
       const contactData: ResendContact = {
         email: formValues[resendMapping?.email || 'email'] as string,

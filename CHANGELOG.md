@@ -5,7 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.3-beta.1] - 2024-07-XX
+## [0.1.4-beta.1] - 2025-03-10
+
+### Added
+- Google reCAPTCHA v3 integration for enhanced bot protection
+- New `useReCaptcha` hook for managing reCAPTCHA
+- reCAPTCHA proxy endpoint for secure token verification
+- Documentation and examples for reCAPTCHA integration
+
+### Changed
+- Expanded security options with reCAPTCHA configuration
+- Updated documentation to reflect new security features
+
+### Fixed
+- Improved error handling for reCAPTCHA verification
+
+## [0.1.3-beta.1] - 2025-03-10
 
 ### Added
 - Centralized event system for handling analytics and webhooks
