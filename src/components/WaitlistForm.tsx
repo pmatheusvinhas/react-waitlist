@@ -82,6 +82,8 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   analytics,
   resendMapping,
   webhooks,
+  onView,
+  onSubmit,
   onSuccess,
   onError,
   className,
@@ -252,7 +254,11 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
       
       // Call onSuccess callback
       if (onSuccess) {
-        onSuccess(data);
+        onSuccess({
+          timestamp: new Date().toISOString(),
+          formData: formValues,
+          response: data
+        });
       }
     } catch (error) {
       // Set error state
@@ -273,9 +279,17 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
       
       // Call onError callback
       if (onError && error instanceof Error) {
-        onError(error);
+        onError({
+          timestamp: new Date().toISOString(),
+          formData: formValues,
+          error: error
+        });
       } else if (onError) {
-        onError(new Error(errorMsg));
+        onError({
+          timestamp: new Date().toISOString(),
+          formData: formValues,
+          error: new Error(errorMsg)
+        });
       }
     }
   };

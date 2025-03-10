@@ -10,6 +10,7 @@ A customizable waitlist component for React that integrates with Resend audience
 - ♿ Accessibility built-in
 - 📊 Analytics tracking
 - 🔌 Easy to integrate with any React application
+- 🔔 Event system for client-side integrations
 - 🪝 Webhook support for integration with external systems
 
 ## Installation
@@ -23,11 +24,13 @@ yarn add react-waitlist
 ## Basic Usage
 
 ```jsx
-import { Waitlist } from 'react-waitlist';
+import { WaitlistForm } from 'react-waitlist';
+// or
+// import WaitlistForm from 'react-waitlist';
 
 function App() {
   return (
-    <Waitlist 
+    <WaitlistForm 
       audienceId="your_audience_id"
       proxyEndpoint="/api/resend-proxy"
     />
@@ -87,7 +90,7 @@ export async function POST(req) {
 ## Customization
 
 ```jsx
-<Waitlist 
+<WaitlistForm 
   audienceId="your_audience_id"
   proxyEndpoint="/api/resend-proxy"
   
@@ -131,9 +134,11 @@ export async function POST(req) {
     }
   ]}
   
-  // Callbacks
-  onSuccess={(data) => console.log('Success:', data)}
-  onError={(error) => console.error('Error:', error)}
+  // Event callbacks
+  onView={({ timestamp }) => console.log('Form viewed at', timestamp)}
+  onSubmit={({ formData }) => console.log('Form submitted with', formData)}
+  onSuccess={({ response }) => console.log('Success:', response)}
+  onError={({ error }) => console.error('Error:', error)}
 />
 ```
 
@@ -146,6 +151,7 @@ Additional documentation:
 - [API Reference](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/api-reference.md)
 - [Customization](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/customization.md)
 - [Webhooks](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/webhooks.md)
+- [Events](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/events.md)
 - [Accessibility](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/accessibility.md)
 - [Security](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/security.md)
 

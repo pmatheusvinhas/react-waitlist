@@ -2,14 +2,14 @@
 
 ## Components
 
-### `<Waitlist>`
+### `<WaitlistForm>`
 
 The main component for client-side usage.
 
 ```jsx
-import { Waitlist } from 'react-waitlist';
+import { WaitlistForm } from 'react-waitlist';
 
-<Waitlist 
+<WaitlistForm 
   audienceId="your-audience-id"
   proxyEndpoint="/api/resend-proxy"
 />
@@ -53,7 +53,7 @@ import { ServerWaitlist } from 'react-waitlist/server';
 
 #### Props
 
-Same as `<Waitlist>` except:
+Same as `<WaitlistForm>` except:
 - `apiKey` is required
 - `proxyEndpoint` is not available
 

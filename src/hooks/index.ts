@@ -1,2 +1,3 @@
+export * from './useResendAudience';
 export * from './useWaitlistForm';
-export * from './useResendAudience'; 
+export * from './useWaitlistEvents'; 

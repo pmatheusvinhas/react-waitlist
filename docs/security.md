@@ -44,13 +44,13 @@ export default createResendProxy({
 Then, use the client-side component with the proxy endpoint:
 
 ```jsx
-import { Waitlist } from 'react-waitlist';
+import { WaitlistForm } from 'react-waitlist';
 
-function HomePage() {
+function ClientWaitlist() {
   return (
-    <Waitlist 
-      audienceId="your-audience-id"
-      proxyEndpoint="/api/resend-proxy" // No API key needed on the client
+    <WaitlistForm
+      audienceId="your_audience_id"
+      proxyEndpoint="/api/resend-proxy"
     />
   );
 }
@@ -65,7 +65,7 @@ React Waitlist includes several features to protect against spam and bot submiss
 A honeypot field is an invisible field that humans won't fill out, but bots might. This is enabled by default:
 
 ```jsx
-<Waitlist 
+<WaitlistForm 
   audienceId="your-audience-id"
   proxyEndpoint="/api/resend-proxy"
   security={{
@@ -79,7 +79,7 @@ A honeypot field is an invisible field that humans won't fill out, but bots migh
 Bots typically fill out forms much faster than humans. This check detects suspiciously fast submissions:
 
 ```jsx
-<Waitlist 
+<WaitlistForm 
   audienceId="your-audience-id"
   proxyEndpoint="/api/resend-proxy"
   security={{
@@ -93,7 +93,7 @@ Bots typically fill out forms much faster than humans. This check detects suspic
 For additional protection, you can integrate with Google reCAPTCHA:
 
 ```jsx
-<Waitlist 
+<WaitlistForm 
   audienceId="your-audience-id"
   proxyEndpoint="/api/resend-proxy"
   security={{

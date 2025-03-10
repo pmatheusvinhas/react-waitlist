@@ -7,77 +7,64 @@ React Waitlist is highly customizable to match your brand and design system. Thi
 You can customize the text content of the waitlist form:
 
 ```jsx
-<Waitlist 
-  audienceId="your-audience-id"
+<WaitlistForm
+  audienceId="your_audience_id"
   proxyEndpoint="/api/resend-proxy"
   
   // Content customization
-  title="Join Our Private Beta"
-  description="Sign up to get early access to our revolutionary product."
+  title="Join our exclusive beta"
+  description="Get early access to our product and help shape its future."
   submitText="Request Access"
-  successTitle="You're In!"
-  successDescription="Thank you for joining our private beta. We'll be in touch soon."
+  successTitle="You're on the list!"
+  successDescription="Thank you for your interest. We'll be in touch soon."
 />
 ```
 
 ## Field Customization
 
-You can customize the fields that are collected:
+You can customize the fields collected in the form:
 
 ```jsx
-<Waitlist 
-  audienceId="your-audience-id"
+<WaitlistForm
+  audienceId="your_audience_id"
   proxyEndpoint="/api/resend-proxy"
+  
+  // Field customization
   fields={[
-    {
-      name: 'email',
-      type: 'email',
-      label: 'Email Address',
-      required: true,
-      placeholder: 'your@email.com',
+    { 
+      name: 'email', 
+      type: 'email', 
+      required: true, 
+      label: 'Email Address', 
+      placeholder: 'your@email.com' 
+    },
+    { 
+      name: 'firstName', 
+      type: 'text', 
+      required: false, 
+      label: 'First Name' 
+    },
+    { 
+      name: 'role', 
+      type: 'select', 
+      required: true, 
+      label: 'Your Role',
+      options: ['Developer', 'Designer', 'Product Manager', 'Other']
     },
     {
-      name: 'firstName',
-      type: 'text',
-      label: 'First Name',
-      required: false,
-      placeholder: 'John',
-    },
-    {
-      name: 'lastName',
-      type: 'text',
-      label: 'Last Name',
-      required: false,
-      placeholder: 'Doe',
-    },
-    {
-      name: 'role',
-      type: 'select',
-      label: 'Role',
-      options: ['Developer', 'Designer', 'Product Manager', 'Other'],
-      required: false,
-    },
-    {
-      name: 'company',
-      type: 'text',
-      label: 'Company',
-      required: false,
-      placeholder: 'Acme Inc.',
-    },
-    {
-      name: 'consent',
+      name: 'updates',
       type: 'checkbox',
-      label: 'I agree to receive updates about the product',
-      required: true,
-    },
+      required: false,
+      label: 'Receive product updates',
+      defaultValue: true
+    }
   ]}
   
   // Map fields to Resend API
   resendMapping={{
     email: 'email',
     firstName: 'firstName',
-    lastName: 'lastName',
-    metadata: ['role', 'company'], // Fields to send as metadata
+    metadata: ['role', 'updates']
   }}
 />
 ```
@@ -94,20 +81,20 @@ You can customize the fields that are collected:
 You can customize the visual appearance of the waitlist form using the theme prop:
 
 ```jsx
-<Waitlist 
-  audienceId="your-audience-id"
+<WaitlistForm
+  audienceId="your_audience_id"
   proxyEndpoint="/api/resend-proxy"
+  
+  // Theme customization
   theme={{
-    // Colors
     colors: {
-      primary: '#3182CE', // Primary color (buttons, accents)
-      secondary: '#805AD5', // Secondary color
-      background: '#FFFFFF', // Background color
-      text: '#1A202C', // Text color
-      error: '#E53E3E', // Error color
-      success: '#38A169', // Success color
+      primary: '#3182CE',
+      secondary: '#805AD5',
+      background: '#F7FAFC',
+      text: '#1A202C',
+      error: '#E53E3E',
+      success: '#38A169',
       gray: {
-        50: '#F7FAFC',
         100: '#EDF2F7',
         200: '#E2E8F0',
         300: '#CBD5E0',
@@ -119,16 +106,14 @@ You can customize the visual appearance of the waitlist form using the theme pro
         900: '#171923',
       },
     },
-    
-    // Typography
     typography: {
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
       fontSizes: {
-        xs: '0.75rem', // 12px
-        sm: '0.875rem', // 14px
-        md: '1rem', // 16px
-        lg: '1.125rem', // 18px
-        xl: '1.25rem', // 20px
+        xs: '0.75rem',
+        sm: '0.875rem',
+        md: '1rem',
+        lg: '1.125rem',
+        xl: '1.25rem',
       },
       fontWeights: {
         regular: 400,
@@ -136,23 +121,19 @@ You can customize the visual appearance of the waitlist form using the theme pro
         bold: 700,
       },
     },
-    
-    // Spacing
     spacing: {
-      xs: '0.25rem', // 4px
-      sm: '0.5rem', // 8px
-      md: '1rem', // 16px
-      lg: '1.5rem', // 24px
-      xl: '2rem', // 32px
+      xs: '0.5rem',
+      sm: '0.75rem',
+      md: '1rem',
+      lg: '1.5rem',
+      xl: '2rem',
     },
-    
-    // Borders
     borders: {
       radius: {
-        sm: '0.125rem', // 2px
-        md: '0.25rem', // 4px
-        lg: '0.5rem', // 8px
-        full: '9999px', // Circular
+        sm: '0.125rem',
+        md: '0.25rem',
+        lg: '0.5rem',
+        full: '9999px',
       },
     },
   }}
@@ -166,31 +147,24 @@ The theme system is designed to be compatible with popular design systems. Here 
 #### Tailwind CSS
 
 ```jsx
-<Waitlist 
-  audienceId="your-audience-id"
+<WaitlistForm
+  audienceId="your_audience_id"
   proxyEndpoint="/api/resend-proxy"
+  
+  // Tailwind CSS integration
   theme={{
-    colors: {
-      primary: '#3B82F6', // blue-500
-      secondary: '#8B5CF6', // violet-500
-      background: '#FFFFFF',
-      text: '#1F2937', // gray-800
-      error: '#EF4444', // red-500
-      success: '#10B981', // green-500
-      gray: {
-        50: '#F9FAFB',
-        100: '#F3F4F6',
-        200: '#E5E7EB',
-        300: '#D1D5DB',
-        400: '#9CA3AF',
-        500: '#6B7280',
-        600: '#4B5563',
-        700: '#374151',
-        800: '#1F2937',
-        900: '#111827',
-      },
-    },
-    // ... other theme values
+    container: { className: 'bg-white shadow-lg rounded-lg p-6 max-w-md mx-auto' },
+    title: { className: 'text-2xl font-bold text-gray-900 mb-2' },
+    description: { className: 'text-gray-600 mb-6' },
+    form: { className: 'space-y-4' },
+    fieldContainer: { className: 'flex flex-col space-y-1' },
+    label: { className: 'text-sm font-medium text-gray-700' },
+    input: { className: 'px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500' },
+    inputError: { className: 'px-3 py-2 border border-red-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500' },
+    button: { className: 'w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors' },
+    buttonLoading: { className: 'w-full bg-blue-400 text-white font-medium py-2 px-4 rounded-md cursor-not-allowed' },
+    errorMessage: { className: 'text-sm text-red-600 mt-1' },
+    formError: { className: 'p-3 bg-red-50 border border-red-200 text-red-700 rounded-md mt-4' },
   }}
 />
 ```
@@ -198,95 +172,94 @@ The theme system is designed to be compatible with popular design systems. Here 
 #### Material UI
 
 ```jsx
-<Waitlist 
-  audienceId="your-audience-id"
+<WaitlistForm
+  audienceId="your_audience_id"
   proxyEndpoint="/api/resend-proxy"
+  
+  // Material UI integration
   theme={{
-    colors: {
-      primary: '#1976D2', // primary.main
-      secondary: '#9C27B0', // secondary.main
-      background: '#FFFFFF',
-      text: '#212121', // text.primary
-      error: '#D32F2F', // error.main
-      success: '#2E7D32', // success.main
-    },
-    borders: {
-      radius: {
-        sm: '4px',
-        md: '4px',
-        lg: '4px',
-        full: '9999px',
-      },
-    },
-    // ... other theme values
+    container: { sx: { maxWidth: 'sm', mx: 'auto', p: 3, borderRadius: 1, boxShadow: 1 } },
+    title: { sx: { typography: 'h5', mb: 1, fontWeight: 'bold' } },
+    description: { sx: { typography: 'body2', mb: 3, color: 'text.secondary' } },
+    form: { sx: { display: 'flex', flexDirection: 'column', gap: 2 } },
+    fieldContainer: { sx: { width: '100%' } },
+    label: { sx: { typography: 'subtitle2', mb: 0.5 } },
+    input: { sx: { width: '100%', p: 1.5, borderRadius: 1, border: '1px solid', borderColor: 'divider' } },
+    inputError: { sx: { width: '100%', p: 1.5, borderRadius: 1, border: '1px solid', borderColor: 'error.main' } },
+    button: { sx: { mt: 2, py: 1.5, bgcolor: 'primary.main', color: 'primary.contrastText', '&:hover': { bgcolor: 'primary.dark' } } },
+    buttonLoading: { sx: { mt: 2, py: 1.5, bgcolor: 'action.disabledBackground', color: 'text.disabled' } },
+    errorMessage: { sx: { typography: 'caption', color: 'error.main', mt: 0.5 } },
+    formError: { sx: { p: 2, mt: 2, bgcolor: 'error.light', color: 'error.main', borderRadius: 1 } },
   }}
 />
 ```
 
 ## Custom CSS
 
-You can also apply custom CSS using the `className` and `style` props:
+You can apply custom CSS using className and style props:
 
 ```jsx
-<Waitlist 
-  audienceId="your-audience-id"
+<WaitlistForm
+  audienceId="your_audience_id"
   proxyEndpoint="/api/resend-proxy"
+  
   className="my-custom-waitlist"
   style={{ maxWidth: '500px', margin: '0 auto' }}
 />
 ```
 
-Then in your CSS:
+You can then style the component using CSS:
 
 ```css
 .my-custom-waitlist {
-  /* Custom styles */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: #f8f9fa;
+  padding: 2rem;
   border-radius: 8px;
-  padding: 24px;
 }
 
 .my-custom-waitlist h2 {
-  /* Custom title styles */
-  font-size: 24px;
-  margin-bottom: 16px;
+  color: #343a40;
+  font-size: 1.75rem;
 }
-
-/* And so on... */
 ```
 
 ## Animation Customization
 
-You can customize the animations used by the component:
+You can customize animations for the component:
 
 ```jsx
-<Waitlist 
-  audienceId="your-audience-id"
+<WaitlistForm
+  audienceId="your_audience_id"
   proxyEndpoint="/api/resend-proxy"
-  animations={{
-    type: 'fadeSlide', // 'fade', 'slide', 'fadeSlide', 'scale', 'none'
-    duration: 300, // Duration in milliseconds
-    easing: 'ease-in-out', // CSS easing function
-    delay: 0, // Delay in milliseconds
+  
+  theme={{
+    // Animation customization
+    animations: {
+      transition: 'all 0.3s ease-in-out',
+      success: {
+        animation: 'fadeIn 0.5s ease-in-out',
+      },
+    },
   }}
 />
 ```
 
 ## Accessibility Customization
 
-You can customize the accessibility features:
+You can enhance accessibility features:
 
 ```jsx
-<Waitlist 
-  audienceId="your-audience-id"
+<WaitlistForm
+  audienceId="your_audience_id"
   proxyEndpoint="/api/resend-proxy"
+  
   a11y={{
-    announceStatus: true, // Announce status changes to screen readers
-    highContrast: false, // Use high contrast mode
-    reducedMotion: 'auto', // Respect user's reduced motion preference
+    announceStatus: true,
+    highContrast: false,
+    reducedMotion: 'auto',
     ariaLabels: {
       form: 'Waitlist signup form',
-      emailField: 'Your email address',
+      emailField: 'Email address',
       submitButton: 'Join the waitlist',
       successMessage: 'Successfully joined the waitlist',
       errorMessage: 'Error joining the waitlist',
@@ -297,7 +270,7 @@ You can customize the accessibility features:
 
 ## Advanced Customization
 
-For more advanced customization, you can use the hooks directly and build your own UI:
+For complete control, you can use the hooks to build your own UI:
 
 ```jsx
 import { useWaitlistForm } from 'react-waitlist/hooks';
@@ -308,22 +281,20 @@ function CustomWaitlistForm() {
     formValues,
     validationResults,
     errorMessage,
-    honeypotFieldName,
     handleChange,
     handleSubmit,
     resetForm,
   } = useWaitlistForm({
-    fields: [
-      { name: 'email', type: 'email', label: 'Email', required: true },
-    ],
-    audienceId: 'your-audience-id',
+    audienceId: 'your_audience_id',
     proxyEndpoint: '/api/resend-proxy',
+    fields: [
+      { name: 'email', type: 'email', required: true, label: 'Email' },
+    ],
   });
 
-  // Build your own UI using the hook's state and handlers
   return (
-    <form onSubmit={handleSubmit}>
-      {/* Your custom UI */}
-    </form>
+    <div>
+      {/* Your completely custom UI here */}
+    </div>
   );
 } 

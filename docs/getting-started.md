@@ -57,17 +57,15 @@ export async function POST(req) {
 Then, use the component in your client-side code:
 
 ```jsx
-import { Waitlist } from 'react-waitlist';
+import { WaitlistForm } from 'react-waitlist';
 
-function HomePage() {
+function App() {
   return (
-    <Waitlist 
-      audienceId="your-audience-id"
+    <WaitlistForm 
+      audienceId="your_audience_id"
       proxyEndpoint="/api/resend-proxy"
       title="Join Our Waitlist"
       description="Be the first to know when we launch."
-      onSuccess={(data) => console.log('Success:', data)}
-      onError={(error) => console.error('Error:', error)}
     />
   );
 }
@@ -99,7 +97,7 @@ React Waitlist is highly customizable. Here are some examples:
 ### Custom Fields
 
 ```jsx
-<Waitlist 
+<WaitlistForm 
   audienceId="your-audience-id"
   proxyEndpoint="/api/resend-proxy"
   fields={[
@@ -150,7 +148,7 @@ React Waitlist is highly customizable. Here are some examples:
 ### Custom Theme
 
 ```jsx
-<Waitlist 
+<WaitlistForm 
   audienceId="your-audience-id"
   proxyEndpoint="/api/resend-proxy"
   theme={{
@@ -194,7 +192,7 @@ React Waitlist is highly customizable. Here are some examples:
 ### Accessibility
 
 ```jsx
-<Waitlist 
+<WaitlistForm 
   audienceId="your-audience-id"
   proxyEndpoint="/api/resend-proxy"
   a11y={{
@@ -215,7 +213,7 @@ React Waitlist is highly customizable. Here are some examples:
 ### Security
 
 ```jsx
-<Waitlist 
+<WaitlistForm 
   audienceId="your-audience-id"
   proxyEndpoint="/api/resend-proxy"
   security={{
@@ -230,7 +228,7 @@ React Waitlist is highly customizable. Here are some examples:
 ### Analytics
 
 ```jsx
-<Waitlist 
+<WaitlistForm 
   audienceId="your-audience-id"
   proxyEndpoint="/api/resend-proxy"
   analytics={{

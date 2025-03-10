@@ -199,10 +199,14 @@ export interface WaitlistProps {
   resendMapping?: ResendMapping;
   /** Webhook configuration */
   webhooks?: WebhookConfig[];
-  /** Callback when submission is successful */
-  onSuccess?: (data: any) => void;
-  /** Callback when submission fails */
-  onError?: (error: Error) => void;
+  /** Callback when view event occurs */
+  onView?: (data: { timestamp: string }) => void;
+  /** Callback when submit event occurs */
+  onSubmit?: (data: { timestamp: string; formData: Record<string, any> }) => void;
+  /** Callback when success event occurs */
+  onSuccess?: (data: { timestamp: string; formData: Record<string, any>; response: any }) => void;
+  /** Callback when error event occurs */
+  onError?: (data: { timestamp: string; formData: Record<string, any>; error: Error }) => void;
   /** Custom CSS class name */
   className?: string;
   /** Custom inline styles */

@@ -4,19 +4,20 @@ React Waitlist supports webhooks to help you integrate with external systems and
 
 ## Basic Usage
 
-To use webhooks, simply add the `webhooks` prop to your Waitlist component:
+To use webhooks, simply add the `webhooks` prop to your WaitlistForm component:
 
 ```jsx
-import WaitlistForm from 'react-waitlist';
+import { WaitlistForm } from 'react-waitlist';
 
 function MyWaitlist() {
   return (
     <WaitlistForm
-      apiKey="your_resend_api_key"
       audienceId="your_audience_id"
+      proxyEndpoint="/api/resend-proxy"
+      
       webhooks={[
         {
-          url: "https://your-webhook-endpoint.com/hook",
+          url: "/api/waitlist-webhook",
           events: ["success"],
           includeAllFields: true
         }
@@ -92,29 +93,74 @@ For error events, the payload includes an `error` object instead of `resendRespo
 
 ## Multiple Webhooks
 
-You can configure multiple webhooks for different purposes:
+You can configure multiple webhooks for different events:
 
 ```jsx
 <WaitlistForm
-  apiKey="your_resend_api_key"
   audienceId="your_audience_id"
+  proxyEndpoint="/api/resend-proxy"
+  
   webhooks={[
-    // Send successful signups to your CRM
     {
       url: "https://your-crm-api.com/leads",
       events: ["success"],
-      includeAllFields: true,
-      headers: {
-        "Authorization": "Bearer your-crm-api-key"
-      }
+      includeAllFields: true
     },
-    // Track all events in your analytics platform
     {
-      url: "https://your-analytics-api.com/track",
+      url: "/api/analytics-webhook",
       events: ["view", "submit", "success", "error"],
-      includeFields: ["email", "referrer"],
+      includeAllFields: false,
+      includeFields: ["email"]
+    }
+  ]}
+/>
+```
+
+## Selective Field Inclusion
+
+You can control which fields are sent to your webhook:
+
+```jsx
+<WaitlistForm
+  audienceId="your_audience_id"
+  proxyEndpoint="/api/resend-proxy"
+  
+  fields={[
+    { name: 'email', type: 'email', required: true, label: 'Email' },
+    { name: 'firstName', type: 'text', required: false, label: 'First Name' },
+    { name: 'lastName', type: 'text', required: false, label: 'Last Name' },
+    { name: 'company', type: 'text', required: false, label: 'Company' },
+    { name: 'role', type: 'select', required: false, label: 'Role', 
+      options: ['Developer', 'Designer', 'Product Manager', 'Other'] }
+  ]}
+  
+  webhooks={[
+    {
+      url: "/api/webhook",
+      events: ["success"],
+      includeAllFields: false,
+      includeFields: ["email", "firstName", "lastName"]
+    }
+  ]}
+/>
+```
+
+## Custom Headers
+
+You can add custom headers to your webhook requests:
+
+```jsx
+<WaitlistForm
+  audienceId="your_audience_id"
+  proxyEndpoint="/api/resend-proxy"
+  
+  webhooks={[
+    {
+      url: "/api/webhook",
+      events: ["success"],
       headers: {
-        "X-API-Key": "your-analytics-api-key"
+        "X-API-Key": "your-secret-key",
+        "X-Source": "waitlist-form"
       }
     }
   ]}
@@ -207,4 +253,26 @@ If your webhooks aren't working as expected:
 
 - Webhooks are sent from the client-side by default, which may not be suitable for all use cases.
 - For server-side webhook handling, consider implementing a proxy endpoint on your server.
-- Webhook retries use a simple linear backoff strategy. For production use cases with critical webhooks, consider implementing a more sophisticated retry mechanism on your server. 
+- Webhook retries use a simple linear backoff strategy. For production use cases with critical webhooks, consider implementing a more sophisticated retry mechanism on your server.
+
+## Retry Configuration
+
+You can configure retry behavior for failed webhook requests:
+
+```jsx
+<WaitlistForm
+  audienceId="your_audience_id"
+  proxyEndpoint="/api/resend-proxy"
+  
+  webhooks={[
+    {
+      url: "/api/webhook",
+      events: ["success"],
+      retry: true,
+      maxRetries: 3
+    }
+  ]}
+/>
+```
+
+This will attempt to resend the webhook up to 3 times if the initial request fails. 

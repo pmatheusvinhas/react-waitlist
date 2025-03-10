@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Field, SecurityConfig, ResendMapping, WebhookConfig } from '../types';
-import { validateForm, isFormValid, generateHoneypotFieldName, isLikelyBot, trackEvent, sendWebhooks } from '../utils';
+import { validateForm, isFormValid, generateHoneypotFieldName, isLikelyBot, trackEvent, sendWebhooks, createEventManager, WaitlistEventData } from '../utils';
 import { Resend } from 'resend';
 import { useResendAudience, ResendContact } from './useResendAudience';
 
@@ -29,10 +29,14 @@ export interface UseWaitlistFormOptions {
   analytics?: any;
   /** Webhook configuration */
   webhooks?: WebhookConfig[];
-  /** Callback when submission is successful */
-  onSuccess?: (data: any) => void;
-  /** Callback when submission fails */
-  onError?: (error: Error) => void;
+  /** Callback when view event occurs */
+  onView?: (data: { timestamp: string }) => void;
+  /** Callback when submit event occurs */
+  onSubmit?: (data: { timestamp: string; formData: Record<string, any> }) => void;
+  /** Callback when success event occurs */
+  onSuccess?: (data: { timestamp: string; formData: Record<string, any>; response: any }) => void;
+  /** Callback when error event occurs */
+  onError?: (data: { timestamp: string; formData: Record<string, any>; error: Error }) => void;
 }
 
 /**
@@ -55,6 +59,8 @@ export interface UseWaitlistFormReturn {
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   /** Reset form */
   resetForm: () => void;
+  /** Event manager */
+  eventManager: ReturnType<typeof createEventManager>;
 }
 
 /**
@@ -73,6 +79,8 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     apiKey,
     analytics,
     webhooks,
+    onView,
+    onSubmit,
     onSuccess,
     onError,
   } = options;
@@ -83,6 +91,9 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     audienceId,
     proxyEndpoint,
   });
+
+  // Create event manager
+  const eventManager = useRef(createEventManager()).current;
 
   // Form state
   const [formState, setFormState] = useState<FormState>('idle');
@@ -109,13 +120,73 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     setFormValues(initialValues);
   }, [fields]);
   
-  // Track view event on mount
+  // Register event handlers
   useEffect(() => {
+    // View event handler
+    const viewHandler = (data: WaitlistEventData) => {
+      if (onView) {
+        onView({ timestamp: data.timestamp });
+      }
+    };
+    
+    // Submit event handler
+    const submitHandler = (data: WaitlistEventData) => {
+      if (onSubmit && data.formData) {
+        onSubmit({ timestamp: data.timestamp, formData: data.formData });
+      }
+    };
+    
+    // Success event handler
+    const successHandler = (data: WaitlistEventData) => {
+      if (onSuccess && data.formData && data.response) {
+        onSuccess({ 
+          timestamp: data.timestamp, 
+          formData: data.formData, 
+          response: data.response 
+        });
+      }
+    };
+    
+    // Error event handler
+    const errorHandler = (data: WaitlistEventData) => {
+      if (onError && data.formData && data.error) {
+        onError({ 
+          timestamp: data.timestamp, 
+          formData: data.formData, 
+          error: new Error(data.error.message) 
+        });
+      }
+    };
+    
+    // Subscribe to events
+    const unsubscribeView = eventManager.subscribe('view', viewHandler);
+    const unsubscribeSubmit = eventManager.subscribe('submit', submitHandler);
+    const unsubscribeSuccess = eventManager.subscribe('success', successHandler);
+    const unsubscribeError = eventManager.subscribe('error', errorHandler);
+    
+    // Unsubscribe when component unmounts
+    return () => {
+      unsubscribeView();
+      unsubscribeSubmit();
+      unsubscribeSuccess();
+      unsubscribeError();
+    };
+  }, [eventManager, onView, onSubmit, onSuccess, onError]);
+  
+  // Emit view event on mount
+  useEffect(() => {
+    // Emit view event
+    eventManager.emit({
+      type: 'view',
+      timestamp: new Date().toISOString(),
+    });
+    
+    // Track view event with analytics
     trackEvent(analytics, { event: 'view' });
     
     // Send webhooks for view event
     sendWebhooks(webhooks, 'view', {});
-  }, [analytics, webhooks]);
+  }, [eventManager, analytics, webhooks]);
   
   // Handle input change
   const handleChange = (
@@ -154,6 +225,13 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Emit submit event
+    eventManager.emit({
+      type: 'submit',
+      timestamp: new Date().toISOString(),
+      formData: formValues,
+    });
     
     // Track submit event
     trackEvent(analytics, { event: 'submit' });
@@ -221,6 +299,14 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
       // Set success state
       setFormState('success');
       
+      // Emit success event
+      eventManager.emit({
+        type: 'success',
+        timestamp: new Date().toISOString(),
+        formData: formValues,
+        response: data,
+      });
+      
       // Track success event
       trackEvent(analytics, { 
         event: 'success',
@@ -231,16 +317,22 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
       
       // Send webhooks for success event
       sendWebhooks(webhooks, 'success', formValues, data);
-      
-      // Call onSuccess callback
-      if (onSuccess) {
-        onSuccess(data);
-      }
     } catch (error) {
       // Set error state
       setFormState('error');
       const errorMsg = error instanceof Error ? error.message : 'An unexpected error occurred';
       setErrorMessage(errorMsg);
+      
+      // Emit error event
+      eventManager.emit({
+        type: 'error',
+        timestamp: new Date().toISOString(),
+        formData: formValues,
+        error: {
+          message: errorMsg,
+          code: (error as any)?.code,
+        },
+      });
       
       // Track error event
       trackEvent(analytics, { 
@@ -253,11 +345,6 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
       
       // Send webhooks for error event
       sendWebhooks(webhooks, 'error', formValues, undefined, error instanceof Error ? error : new Error(errorMsg));
-      
-      // Call onError callback
-      if (onError && error instanceof Error) {
-        onError(error);
-      }
     }
   };
   
@@ -291,5 +378,6 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     handleChange,
     handleSubmit,
     resetForm,
+    eventManager,
   };
 }; 
