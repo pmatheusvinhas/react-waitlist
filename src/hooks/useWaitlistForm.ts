@@ -19,12 +19,8 @@ export interface UseWaitlistFormOptions {
   security?: SecurityConfig;
   /** Mapping to Resend API fields */
   resendMapping?: ResendMapping;
-  /** Audience ID from Resend (deprecated, use resendAudienceId instead) */
-  audienceId?: string;
   /** Resend Audience ID */
-  resendAudienceId?: string;
-  /** Endpoint for Resend proxy API (deprecated, use resendProxyEndpoint instead) */
-  proxyEndpoint?: string;
+  resendAudienceId: string;
   /** Endpoint for Resend proxy API */
   resendProxyEndpoint?: string;
   /** Endpoint for webhook proxy API */
@@ -80,9 +76,7 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
       checkSubmissionTime: true,
     },
     resendMapping,
-    audienceId,
     resendAudienceId,
-    proxyEndpoint,
     resendProxyEndpoint,
     webhookProxyEndpoint,
     apiKey,
@@ -94,15 +88,11 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     onError,
   } = options;
 
-  // Get the effective audience ID and proxy endpoint
-  const effectiveAudienceId = resendAudienceId || audienceId || '';
-  const effectiveProxyEndpoint = resendProxyEndpoint || proxyEndpoint;
-
   // Initialize Resend audience hook
   const resendAudience = useResendAudience({
     apiKey,
-    audienceId: effectiveAudienceId,
-    proxyEndpoint: effectiveProxyEndpoint,
+    audienceId: resendAudienceId,
+    proxyEndpoint: resendProxyEndpoint,
   });
 
   // Create event manager

@@ -171,13 +171,9 @@ export interface WebhookConfig {
 export interface WaitlistProps {
   /** Resend API key (only use in server components or with proxy) */
   apiKey?: string;
-  /** Audience ID from Resend */
-  audienceId?: string;
-  /** Resend Audience ID (replaces audienceId for clarity) */
-  resendAudienceId?: string;
+  /** Resend Audience ID */
+  resendAudienceId: string;
   /** Endpoint for Resend proxy API (for client-side usage) */
-  proxyEndpoint?: string;
-  /** Endpoint for Resend proxy API (replaces proxyEndpoint for clarity) */
   resendProxyEndpoint?: string;
   /** Endpoint for webhook proxy API (for secure webhook delivery) */
   webhookProxyEndpoint?: string;
@@ -217,4 +213,4 @@ export interface WaitlistProps {
   className?: string;
   /** Custom inline styles */
   style?: React.CSSProperties;
-} 
+}

@@ -66,9 +66,7 @@ interface ExtendedTheme extends ThemeConfig {
  */
 const WaitlistFormInner: React.FC<WaitlistProps> = ({
   apiKey,
-  audienceId,
   resendAudienceId,
-  proxyEndpoint,
   resendProxyEndpoint,
   webhookProxyEndpoint,
   title = 'Join our waitlist',
@@ -100,15 +98,11 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   const ariaLabels = useAriaLabels();
   const reducedMotion = useReducedMotion();
   
-  // Get the effective audience ID and proxy endpoint
-  const effectiveAudienceId = resendAudienceId || audienceId || '';
-  const effectiveProxyEndpoint = resendProxyEndpoint || proxyEndpoint;
-  
   // Initialize Resend audience hook
   const resendAudience = useResendAudience({
     apiKey,
-    audienceId: effectiveAudienceId,
-    proxyEndpoint: effectiveProxyEndpoint,
+    audienceId: resendAudienceId,
+    proxyEndpoint: resendProxyEndpoint,
   });
   
   // Form state

@@ -20,6 +20,11 @@ export interface WebhookPayload {
 }
 
 /**
+ * Determine if we're in a browser environment
+ */
+const isBrowser = typeof window !== 'undefined';
+
+/**
  * Send a webhook request
  */
 export const sendWebhook = async (
@@ -70,8 +75,13 @@ export const sendWebhook = async (
   }
 
   try {
-    // If webhook proxy endpoint is provided, use it for secure delivery
-    if (webhookProxyEndpoint) {
+    // In browser environments, webhookProxyEndpoint is required for security
+    if (isBrowser) {
+      if (!webhookProxyEndpoint) {
+        console.error('webhookProxyEndpoint is required for client-side webhook delivery. Use server-side components or set up a webhook proxy.');
+        return null;
+      }
+
       const proxyPayload = {
         destination: config.url,
         headers: config.headers,
@@ -86,10 +96,9 @@ export const sendWebhook = async (
         body: JSON.stringify(proxyPayload),
       });
 
-      // No retry logic needed here as the proxy handles retries
       return response;
     } else {
-      // Direct webhook delivery (less secure, only for public endpoints)
+      // Server-side direct webhook delivery
       const response = await fetch(config.url, {
         method: 'POST',
         headers: {
@@ -101,9 +110,6 @@ export const sendWebhook = async (
 
       // Handle retry logic if configured
       if (!response.ok && config.retry && config.maxRetries) {
-        // Implement retry logic here
-        // This is a simplified version; a production implementation would use
-        // exponential backoff and more sophisticated retry strategies
         let retries = 0;
         while (!response.ok && retries < config.maxRetries) {
           await new Promise((resolve) => setTimeout(resolve, 1000 * (retries + 1)));
@@ -151,4 +157,4 @@ export const sendWebhooks = async (
   await Promise.all(
     configs.map((config) => sendWebhook(config, event, data, resendResponse, error, webhookProxyEndpoint))
   );
-}; 
+};

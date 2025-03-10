@@ -169,15 +169,15 @@ You can add custom headers to your webhook requests:
 
 ## Webhook Security
 
-When implementing webhook endpoints, consider these security best practices:
+For client-side usage, the webhook proxy is **required** to ensure the security of your credentials. This follows the same philosophy as the Resend proxy, where never exposing API keys or sensitive credentials in the frontend is an essential practice.
 
-1. **Use the Webhook Proxy**: For secure webhook delivery with sensitive headers, use the webhook proxy endpoint:
+1. **Configure the Webhook Proxy**: For client-side usage, you must set up a webhook proxy:
 
 ```jsx
 <WaitlistForm
-  audienceId="your_audience_id"
+  resendAudienceId="your_audience_id"
   resendProxyEndpoint="/api/resend-proxy"
-  webhookProxyEndpoint="/api/webhook-proxy"
+  webhookProxyEndpoint="/api/webhook-proxy" // Required for client-side
   webhooks={[
     {
       url: "https://your-api.com/webhook",
@@ -190,7 +190,7 @@ When implementing webhook endpoints, consider these security best practices:
 />
 ```
 
-2. **Set up the Webhook Proxy**: Create a webhook proxy endpoint on your server:
+2. **Create the Proxy Endpoint**: Set up the proxy endpoint on your server:
 
 ```jsx
 // pages/api/webhook-proxy.js (Next.js Pages Router)
@@ -198,9 +198,9 @@ import { createWebhookProxy } from 'react-waitlist/server';
 
 export default createWebhookProxy({
   secretKey: process.env.WEBHOOK_SECRET_KEY,
-  allowedDestinations: ['https://your-api.com'],
+  allowedDestinations: ['https://your-api.com'], // Restrict allowed destinations
   defaultHeaders: {
-    'X-Source': 'your-app'
+    'X-Source': 'your-app' // Add default headers to all requests
   }
 });
 ```
@@ -225,10 +225,35 @@ export async function POST(req) {
 }
 ```
 
-3. **Validate the source**: Use custom headers or API keys to verify that requests are coming from your application.
-4. **Use HTTPS**: Always use HTTPS for your webhook endpoints to encrypt data in transit.
-5. **Implement rate limiting**: Protect your endpoints from abuse by implementing rate limiting.
-6. **Validate payload data**: Always validate and sanitize incoming data before processing it.
+3. **Server-Side Alternative**: For server-side components, the proxy is optional, as the server can safely call webhooks directly:
+
+```jsx
+import { ServerWaitlist } from 'react-waitlist/server';
+
+export default function Page() {
+  return (
+    <ServerWaitlist 
+      apiKey={process.env.RESEND_API_KEY}
+      resendAudienceId="your_audience_id"
+      webhooks={[
+        {
+          url: "https://your-api.com/webhook",
+          events: ["success"],
+          headers: {
+            "X-API-Key": "your-secret-key" // Safe in server-side components
+          }
+        }
+      ]}
+    />
+  );
+}
+```
+
+4. **Additional Security Practices**:
+   - **Validate the source**: Use custom headers or API keys to verify that requests are coming from your application.
+   - **Use HTTPS**: Always use HTTPS for your webhook endpoints to encrypt data in transit.
+   - **Implement rate limiting**: Protect your endpoints from abuse by implementing rate limiting.
+   - **Validate payload data**: Always validate and sanitize incoming data before processing it.
 
 ## Testing Webhooks
 

@@ -121,6 +121,8 @@ export async function POST(req) {
 }
 ```
 
+> **Important**: For client-side usage, both `resendProxyEndpoint` and `webhookProxyEndpoint` are required to ensure the security of your credentials. Server-side components can safely call APIs and webhooks directly.
+
 ## Customization
 
 ```jsx
