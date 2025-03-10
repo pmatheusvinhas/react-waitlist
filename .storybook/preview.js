@@ -1,11 +1,15 @@
 import { initialize, mswLoader } from 'msw-storybook-addon';
 import { handlers } from './mocks';
 
+// Determine if we're running on GitHub Pages
+const isGitHubPages = window.location.hostname.includes('github.io');
+const baseUrl = isGitHubPages ? '/react-waitlist' : '';
+
 // Initialize MSW
 initialize({
   onUnhandledRequest: 'bypass',
   serviceWorker: {
-    url: '/react-waitlist/mockServiceWorker.js',
+    url: `${baseUrl}/mockServiceWorker.js`,
   },
 });
 

@@ -18,7 +18,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "deploy-storybook": "storybook build && npx msw init storybook-static --save && cp .nojekyll storybook-static/ && gh-pages -d storybook-static",
+    "predeploy-storybook": "npm run build-storybook && npx msw init storybook-static --save && cpy .nojekyll storybook-static",
+    "deploy-storybook": "gh-pages -d storybook-static",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -70,7 +71,9 @@
     "@babel/core": "^7.24.0",
     "@babel/preset-env": "^7.24.0",
     "@babel/preset-react": "^7.23.3",
-    "@babel/preset-typescript": "^7.23.3"
+    "@babel/preset-typescript": "^7.23.3",
+    "cross-env": "^7.0.3",
+    "cpy-cli": "^5.0.0"
   },
   "repository": {
     "type": "git",
