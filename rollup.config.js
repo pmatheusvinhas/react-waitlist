@@ -14,12 +14,14 @@ export default {
       format: 'cjs',
       sourcemap: true,
       exports: 'named',
+      inlineDynamicImports: true,
     },
     {
       file: pkg.module,
       format: 'esm',
       sourcemap: true,
       exports: 'named',
+      inlineDynamicImports: true,
     },
   ],
   plugins: [
@@ -38,5 +40,5 @@ export default {
     }),
     terser(),
   ],
-  external: ['react', 'react-dom'],
+  external: ['react', 'react-dom', 'resend'],
 }; 
