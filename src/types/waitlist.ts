@@ -141,6 +141,31 @@ export interface ResendMapping {
 }
 
 /**
+ * Events that can trigger webhooks
+ */
+export type WebhookEvent = 'view' | 'submit' | 'success' | 'error';
+
+/**
+ * Webhook configuration
+ */
+export interface WebhookConfig {
+  /** URL to send the webhook to */
+  url: string;
+  /** Events that trigger this webhook */
+  events?: WebhookEvent[];
+  /** Custom headers to include with the webhook request */
+  headers?: Record<string, string>;
+  /** Whether to include all form fields in the webhook payload */
+  includeAllFields?: boolean;
+  /** Specific fields to include in the webhook payload (if includeAllFields is false) */
+  includeFields?: string[];
+  /** Whether to retry failed webhook requests */
+  retry?: boolean;
+  /** Maximum number of retry attempts */
+  maxRetries?: number;
+}
+
+/**
  * Props for the Waitlist component
  */
 export interface WaitlistProps {
@@ -172,6 +197,8 @@ export interface WaitlistProps {
   analytics?: AnalyticsConfig;
   /** Mapping to Resend API fields */
   resendMapping?: ResendMapping;
+  /** Webhook configuration */
+  webhooks?: WebhookConfig[];
   /** Callback when submission is successful */
   onSuccess?: (data: any) => void;
   /** Callback when submission fails */

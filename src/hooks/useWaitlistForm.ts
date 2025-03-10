@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Field, SecurityConfig, ResendMapping } from '../types';
-import { validateForm, isFormValid, generateHoneypotFieldName, isLikelyBot, trackEvent } from '../utils';
+import { Field, SecurityConfig, ResendMapping, WebhookConfig } from '../types';
+import { validateForm, isFormValid, generateHoneypotFieldName, isLikelyBot, trackEvent, sendWebhooks } from '../utils';
 import { Resend } from 'resend';
 import { useResendAudience, ResendContact } from './useResendAudience';
 
@@ -27,6 +27,8 @@ export interface UseWaitlistFormOptions {
   apiKey?: string;
   /** Analytics configuration */
   analytics?: any;
+  /** Webhook configuration */
+  webhooks?: WebhookConfig[];
   /** Callback when submission is successful */
   onSuccess?: (data: any) => void;
   /** Callback when submission fails */
@@ -70,6 +72,7 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     proxyEndpoint,
     apiKey,
     analytics,
+    webhooks,
     onSuccess,
     onError,
   } = options;
@@ -109,7 +112,10 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
   // Track view event on mount
   useEffect(() => {
     trackEvent(analytics, { event: 'view' });
-  }, [analytics]);
+    
+    // Send webhooks for view event
+    sendWebhooks(webhooks, 'view', {});
+  }, [analytics, webhooks]);
   
   // Handle input change
   const handleChange = (
@@ -151,6 +157,9 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     
     // Track submit event
     trackEvent(analytics, { event: 'submit' });
+    
+    // Send webhooks for submit event
+    sendWebhooks(webhooks, 'submit', formValues);
     
     // Validate all fields
     const results = validateForm(fields, formValues);
@@ -220,6 +229,9 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
         }
       });
       
+      // Send webhooks for success event
+      sendWebhooks(webhooks, 'success', formValues, data);
+      
       // Call onSuccess callback
       if (onSuccess) {
         onSuccess(data);
@@ -238,6 +250,9 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
           email: formValues[resendMapping?.email || 'email'] 
         }
       });
+      
+      // Send webhooks for error event
+      sendWebhooks(webhooks, 'error', formValues, undefined, error instanceof Error ? error : new Error(errorMsg));
       
       // Call onError callback
       if (onError && error instanceof Error) {

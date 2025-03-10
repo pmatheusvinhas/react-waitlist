@@ -81,6 +81,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   },
   analytics,
   resendMapping,
+  webhooks,
   onSuccess,
   onError,
   className,

@@ -10,6 +10,7 @@ A customizable waitlist component for React that integrates with Resend audience
 - ♿ Accessibility built-in
 - 📊 Analytics tracking
 - 🔌 Easy to integrate with any React application
+- 🪝 Webhook support for integration with external systems
 
 ## Installation
 
@@ -121,6 +122,15 @@ export async function POST(req) {
     // ...
   }}
   
+  // Webhooks
+  webhooks={[
+    {
+      url: "https://your-webhook-endpoint.com/hook",
+      events: ["success"],
+      includeAllFields: true
+    }
+  ]}
+  
   // Callbacks
   onSuccess={(data) => console.log('Success:', data)}
   onError={(error) => console.error('Error:', error)}
@@ -135,6 +145,7 @@ Additional documentation:
 - [Getting Started](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/getting-started.md)
 - [API Reference](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/api-reference.md)
 - [Customization](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/customization.md)
+- [Webhooks](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/webhooks.md)
 - [Accessibility](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/accessibility.md)
 - [Security](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/security.md)
 
