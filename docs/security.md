@@ -4,7 +4,7 @@ React Waitlist is designed with security in mind. This document outlines the sec
 
 ## Protecting Your API Key
 
-The Resend API key is a sensitive credential that should never be exposed to the client. React Waitlist provides two approaches to protect your API key:
+The Resend API key is a sensitive credential that should never be exposed to the client. React Waitlist provides several approaches to protect your API key:
 
 ### 1. Server Components
 
@@ -17,28 +17,32 @@ export default function WaitlistPage() {
   return (
     <ServerWaitlist 
       apiKey={process.env.RESEND_API_KEY} // Safely used on the server
-      audienceId="your-audience-id"
+      resendAudienceId="your-audience-id"
     />
   );
 }
 ```
 
-### 2. Proxy API
+### 2. Proxy API (Recommended for client-side usage)
 
 For client-side usage, you should create a proxy API endpoint that securely handles the communication with Resend:
 
 ```jsx
-// pages/api/resend-proxy.js (Next.js)
-import { createResendProxy } from 'react-waitlist/server';
+// Example Express.js proxy endpoint
+const express = require('express');
+const { createResendProxy } = require('react-waitlist/server');
 
-export default createResendProxy({
+const app = express();
+app.use(express.json());
+
+app.post('/api/resend-proxy', createResendProxy({
   apiKey: process.env.RESEND_API_KEY, // Kept on the server
   allowedAudiences: ['your-audience-id'], // Restrict to specific audiences
   rateLimit: {
     max: 10, // Maximum 10 requests
     windowSec: 60, // Per minute
   },
-});
+}));
 ```
 
 Then, use the client-side component with the proxy endpoint:
@@ -49,8 +53,32 @@ import { WaitlistForm } from 'react-waitlist';
 function ClientWaitlist() {
   return (
     <WaitlistForm
-      audienceId="your_audience_id"
-      proxyEndpoint="/api/resend-proxy"
+      resendAudienceId="your_audience_id"
+      resendProxyEndpoint="https://your-api.com/api/resend-proxy"
+    />
+  );
+}
+```
+
+### 3. Custom Handlers (Alternative approach)
+
+If you prefer not to use Resend or don't want to set up proxy endpoints, you can use the component with custom event handlers:
+
+```jsx
+import { WaitlistForm } from 'react-waitlist';
+
+function ClientWaitlist() {
+  return (
+    <WaitlistForm
+      onSuccess={({ formData }) => {
+        // Handle form data yourself
+        // e.g., send to your own backend API
+        fetch('https://your-api.com/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      }}
     />
   );
 }
@@ -66,8 +94,8 @@ A honeypot field is an invisible field that humans won't fill out, but bots migh
 
 ```jsx
 <WaitlistForm 
-  audienceId="your-audience-id"
-  proxyEndpoint="/api/resend-proxy"
+  resendAudienceId="your-audience-id"
+  resendProxyEndpoint="https://your-api.com/api/resend-proxy"
   security={{
     enableHoneypot: true, // Default: true
   }}
@@ -80,8 +108,8 @@ Bots typically fill out forms much faster than humans. This check detects suspic
 
 ```jsx
 <WaitlistForm 
-  audienceId="your-audience-id"
-  proxyEndpoint="/api/resend-proxy"
+  resendAudienceId="your-audience-id"
+  resendProxyEndpoint="https://your-api.com/api/resend-proxy"
   security={{
     checkSubmissionTime: true, // Default: true
   }}
@@ -94,8 +122,9 @@ For additional protection, you can integrate with Google reCAPTCHA:
 
 ```jsx
 <WaitlistForm 
-  audienceId="your-audience-id"
-  proxyEndpoint="/api/resend-proxy"
+  resendAudienceId="your-audience-id"
+  resendProxyEndpoint="https://your-api.com/api/resend-proxy"
+  recaptchaProxyEndpoint="https://your-api.com/api/recaptcha-proxy"
   security={{
     enableReCaptcha: true,
     reCaptchaSiteKey: 'your-recaptcha-site-key',
@@ -158,4 +187,17 @@ Referrer-Policy: strict-origin-when-cross-origin
 
 ## Regular Updates
 
-Keep your dependencies up to date to ensure you have the latest security patches. 
+Keep your dependencies up to date to ensure you have the latest security patches.
+
+## Security Best Practices Checklist
+
+- [ ] Never expose API keys in client-side code
+- [ ] Use proxy endpoints for client-side components
+- [ ] Enable bot protection features
+- [ ] Implement rate limiting
+- [ ] Validate all user inputs
+- [ ] Serve your application over HTTPS
+- [ ] Implement a Content Security Policy
+- [ ] Add security headers
+- [ ] Keep dependencies up to date
+- [ ] Regularly audit your security measures 

@@ -4,7 +4,7 @@ A customizable waitlist component for React that integrates with Resend audience
 
 ## Features
 
-- 🔒 Secure integration with Resend audiences
+- 🔒 Secure integration with [Resend audiences](https://resend.com/blog/manage-subscribers-using-resend-audiences)
 - 🎨 Fully customizable UI with theming support
 - 🤖 Bot and spam protection with reCAPTCHA v3
 - ♿ Accessibility built-in
@@ -15,49 +15,210 @@ A customizable waitlist component for React that integrates with Resend audience
 
 ## Installation
 
+### Frontend (React application)
+
 ```bash
 npm install react-waitlist
 # or
 yarn add react-waitlist
 ```
 
+### Backend (Optional but recommended for security)
+
+```bash
+npm install react-waitlist/server
+# or
+yarn add react-waitlist/server
+```
+
 ## Basic Usage
+
+### Frontend (React)
+
+React Waitlist can be integrated with various systems through different methods:
+
+#### Simple Usage with Custom Handlers
 
 ```jsx
 import { WaitlistForm } from 'react-waitlist';
-// or
-// import WaitlistForm from 'react-waitlist';
+
+function App() {
+  return (
+    <WaitlistForm 
+      onSuccess={({ formData }) => {
+        // Handle successful submission
+        console.log('Form submitted successfully:', formData);
+        // You could save to your database here
+        saveToDatabase(formData);
+        // Or integrate with your CRM
+        sendToCRM(formData);
+        // Or add to your marketing tool
+        addToMailingList(formData);
+      }}
+      onError={({ error }) => {
+        console.error('Error submitting form:', error);
+      }}
+    />
+  );
+}
+```
+
+#### With Resend Integration
+
+```jsx
+import { WaitlistForm } from 'react-waitlist';
 
 function App() {
   return (
     <WaitlistForm 
       resendAudienceId="your_audience_id"
-      resendProxyEndpoint="/api/resend-proxy"
+      resendProxyEndpoint="https://your-api.com/api/resend-proxy"
     />
   );
 }
 ```
 
-## Server-Side Usage (Next.js App Router)
+#### With Webhooks for External Systems
 
 ```jsx
-import { ServerWaitlist } from 'react-waitlist/server';
+import { WaitlistForm } from 'react-waitlist';
 
-export default function Page() {
+function App() {
   return (
-    <ServerWaitlist 
-      apiKey={process.env.RESEND_API_KEY}
-      resendAudienceId="your_audience_id"
+    <WaitlistForm 
+      webhooks={[
+        {
+          url: "https://your-api.com/webhook",
+          events: ["success"],
+          includeAllFields: true
+        }
+      ]}
+      webhookProxyEndpoint="https://your-api.com/api/webhook-proxy"
     />
   );
 }
 ```
 
-## Proxy API Setup
+#### Combining Multiple Integration Methods
 
-For client-side usage, proxy endpoints are strongly recommended to protect your sensitive credentials:
+```jsx
+import { WaitlistForm } from 'react-waitlist';
 
-### Resend Proxy (for API key protection)
+function App() {
+  return (
+    <WaitlistForm 
+      // Resend integration
+      resendAudienceId="your_audience_id"
+      resendProxyEndpoint="https://your-api.com/api/resend-proxy"
+      
+      // Event callbacks
+      onSuccess={({ formData, response }) => {
+        // Custom logic after successful submission
+        trackConversion(formData);
+      }}
+      
+      // Webhooks for external systems
+      webhooks={[
+        {
+          url: "https://your-crm.com/api/leads",
+          events: ["success"]
+        }
+      ]}
+      webhookProxyEndpoint="https://your-api.com/api/webhook-proxy"
+    />
+  );
+}
+```
+
+## Backend Setup (Optional but Recommended)
+
+For security reasons, it's recommended to use proxy endpoints to protect your API keys and credentials.
+
+### Express.js Backend
+
+```javascript
+// server.js
+const express = require('express');
+const cors = require('cors');
+const { createResendProxy } = require('react-waitlist/server');
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+app.post('/api/resend-proxy', createResendProxy({
+  apiKey: process.env.RESEND_API_KEY,
+  allowedAudiences: ['your_audience_id'],
+}));
+
+app.listen(3001, () => {
+  console.log('Server running on port 3001');
+});
+```
+
+### AWS Lambda Function
+
+```javascript
+// lambda-function.js
+const { createResendProxy } = require('react-waitlist/server');
+
+const proxyHandler = createResendProxy({
+  apiKey: process.env.RESEND_API_KEY,
+  allowedAudiences: ['your_audience_id'],
+});
+
+exports.handler = async (event) => {
+  const req = {
+    body: JSON.parse(event.body),
+    headers: event.headers,
+  };
+  
+  let statusCode = 200;
+  let responseBody = {};
+  
+  const res = {
+    status: (code) => {
+      statusCode = code;
+      return {
+        json: (data) => {
+          responseBody = data;
+        }
+      };
+    }
+  };
+  
+  await proxyHandler(req, res);
+  
+  return {
+    statusCode,
+    body: JSON.stringify(responseBody),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  };
+};
+```
+
+### Firebase Cloud Function
+
+```javascript
+// functions/index.js
+const functions = require('firebase-functions');
+const { createResendProxy } = require('react-waitlist/server');
+
+exports.resendProxy = functions.https.onRequest(async (req, res) => {
+  const proxyHandler = createResendProxy({
+    apiKey: process.env.RESEND_API_KEY,
+    allowedAudiences: ['your_audience_id'],
+  });
+  
+  await proxyHandler(req, res);
+});
+```
+
+## Next.js Integration
+
+For Next.js applications, you can use the same component with API routes:
 
 ```jsx
 // pages/api/resend-proxy.js (Next.js Pages Router)
@@ -89,80 +250,15 @@ export async function POST(req) {
 }
 ```
 
-### Webhook Proxy (for secure webhook delivery)
-
-```jsx
-// pages/api/webhook-proxy.js (Next.js Pages Router)
-import { createWebhookProxy } from 'react-waitlist/server';
-
-export default createWebhookProxy({
-  secretKey: process.env.WEBHOOK_SECRET_KEY,
-  allowedDestinations: ['https://your-api.com'],
-});
-```
-
-```jsx
-// app/api/webhook-proxy/route.js (Next.js App Router)
-import { NextResponse } from 'next/server';
-import { createWebhookProxy } from 'react-waitlist/server';
-
-const proxyHandler = createWebhookProxy({
-  secretKey: process.env.WEBHOOK_SECRET_KEY,
-  allowedDestinations: ['https://your-api.com'],
-});
-
-export async function POST(req) {
-  const res = {
-    status: (code) => ({
-      json: (data) => NextResponse.json(data, { status: code }),
-    }),
-  };
-  return await proxyHandler(req, res);
-}
-```
-
-### reCAPTCHA Proxy (for bot protection)
-
-```jsx
-// pages/api/recaptcha-proxy.js (Next.js Pages Router)
-import { createRecaptchaProxy } from 'react-waitlist/server';
-
-export default createRecaptchaProxy({
-  secretKey: process.env.RECAPTCHA_SECRET_KEY,
-  minScore: 0.5, // Optional, defaults to 0.5
-  allowedActions: ['submit_waitlist'], // Optional
-});
-```
-
-```jsx
-// app/api/recaptcha-proxy/route.js (Next.js App Router)
-import { NextResponse } from 'next/server';
-import { createRecaptchaProxy } from 'react-waitlist/server';
-
-const proxyHandler = createRecaptchaProxy({
-  secretKey: process.env.RECAPTCHA_SECRET_KEY,
-  minScore: 0.5,
-  allowedActions: ['submit_waitlist'],
-});
-
-export async function POST(req) {
-  const res = {
-    status: (code) => ({
-      json: (data) => NextResponse.json(data, { status: code }),
-    }),
-  };
-  return await proxyHandler(req, res);
-}
-```
-
-> **Security Recommendation**: For client-side usage, using proxy endpoints is strongly recommended to protect sensitive credentials. The component will display warnings in the console when potential security risks are detected.
-
 ## Customization
 
 ```jsx
 <WaitlistForm 
-  resendAudienceId="your_audience_id"
-  resendProxyEndpoint="/api/resend-proxy"
+  // Event handlers
+  onView={({ timestamp }) => console.log('Form viewed at', timestamp)}
+  onSubmit={({ formData }) => console.log('Form submitted with', formData)}
+  onSuccess={({ response }) => console.log('Success:', response)}
+  onError={({ error }) => console.error('Error:', error)}
   
   // Content
   title="Join our waitlist"
@@ -195,7 +291,7 @@ export async function POST(req) {
     // ...
   }}
   
-  // Security with reCAPTCHA
+  // Security with reCAPTCHA (requires proxy endpoint)
   security={{
     enableReCaptcha: true,
     reCaptchaSiteKey: "your_recaptcha_site_key",
@@ -203,9 +299,9 @@ export async function POST(req) {
     enableHoneypot: true,
     checkSubmissionTime: true
   }}
-  recaptchaProxyEndpoint="/api/recaptcha-proxy"
+  recaptchaProxyEndpoint="https://your-api.com/api/recaptcha-proxy"
   
-  // Webhooks
+  // Webhooks (requires proxy endpoint for security)
   webhooks={[
     {
       url: "https://your-webhook-endpoint.com/hook",
@@ -213,14 +309,28 @@ export async function POST(req) {
       includeAllFields: true
     }
   ]}
-  webhookProxyEndpoint="/api/webhook-proxy"
-  
-  // Event callbacks
-  onView={({ timestamp }) => console.log('Form viewed at', timestamp)}
-  onSubmit={({ formData }) => console.log('Form submitted with', formData)}
-  onSuccess={({ response }) => console.log('Success:', response)}
-  onError={({ error }) => console.error('Error:', error)}
+  webhookProxyEndpoint="https://your-api.com/api/webhook-proxy"
 />
+```
+
+## Architecture
+
+```mermaid
+graph TD
+    A[React Application] --> B[WaitlistForm Component]
+    B --> C{Using Resend?}
+    C -->|Yes| D[Proxy Endpoint]
+    C -->|No| E[Custom Handler]
+    D --> F[Resend API]
+    E --> G[Your Database/API]
+    
+    B --> H{Using reCAPTCHA?}
+    H -->|Yes| I[reCAPTCHA Proxy]
+    I --> J[Google reCAPTCHA API]
+    
+    B --> K{Using Webhooks?}
+    K -->|Yes| L[Webhook Proxy]
+    L --> M[External Services]
 ```
 
 ## Documentation
