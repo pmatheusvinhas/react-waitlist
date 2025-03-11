@@ -17,6 +17,30 @@ export const generateHoneypotFieldName = (): string => {
 };
 
 /**
+ * Create a honeypot field for bot detection
+ */
+export const createHoneypotField = (prefix = 'hp_'): { name: string; type: string; style: React.CSSProperties } => {
+  const fieldName = `${prefix}${Date.now().toString(36)}`;
+  return {
+    name: fieldName,
+    type: 'text',
+    style: {
+      display: 'none',
+    }
+  };
+};
+
+/**
+ * Validate that the honeypot field is empty (indicating a human user)
+ */
+export const validateHoneypot = (formData: Record<string, any>, honeypotField: { name: string }): boolean => {
+  if (!formData || !honeypotField) return true;
+  
+  const value = formData[honeypotField.name];
+  return !value || value === '';
+};
+
+/**
  * Check if a form submission is likely from a bot based on timing
  * Most bots fill forms instantly, while humans take at least a few seconds
  */
@@ -26,6 +50,19 @@ export const isSuspiciousSubmissionTime = (
 ): boolean => {
   const submissionTime = Date.now() - startTime;
   return submissionTime < minTimeInMs;
+};
+
+/**
+ * Validate that the submission time is reasonable (not too fast)
+ */
+export const validateSubmissionTime = (
+  startTime: number | null | undefined,
+  minTimeInMs = 1500
+): boolean => {
+  if (!startTime || typeof startTime !== 'number') return false;
+  
+  const submissionTime = Date.now() - startTime;
+  return submissionTime >= minTimeInMs;
 };
 
 /**
@@ -64,4 +101,28 @@ export const isLikelyBot = (
   }
 
   return { isBot: false };
+};
+
+/**
+ * Sanitize form data by removing honeypot fields and trimming string values
+ */
+export const sanitizeFormData = (formData: Record<string, any> | null | undefined): Record<string, any> => {
+  if (!formData) return {};
+  
+  const sanitized: Record<string, any> = {};
+  
+  for (const key in formData) {
+    // Skip honeypot fields
+    if (key.includes('hp_') || key.includes('_hp_')) continue;
+    
+    // Trim string values
+    const value = formData[key];
+    if (typeof value === 'string') {
+      sanitized[key] = value.trim();
+    } else {
+      sanitized[key] = value;
+    }
+  }
+  
+  return sanitized;
 }; 

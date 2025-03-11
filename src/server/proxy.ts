@@ -101,7 +101,7 @@ export function createResendProxy(config: ResendProxyConfig): RequestHandler {
             firstName: body.firstName,
             lastName: body.lastName,
             unsubscribed: body.unsubscribed,
-            audienceId: body.audienceId,
+            audience_id: body.audienceId,
           };
           
           // Add metadata if provided
@@ -119,7 +119,7 @@ export function createResendProxy(config: ResendProxyConfig): RequestHandler {
           
           // Update contact with basic fields
           const updateOptions: any = {
-            audienceId: body.audienceId,
+            audience_id: body.audienceId,
           };
           
           // Add id or email
@@ -145,8 +145,7 @@ export function createResendProxy(config: ResendProxyConfig): RequestHandler {
           
           result = await resend.contacts.remove({
             id: body.id,
-            email: body.email,
-            audienceId: body.audienceId,
+            audience_id: body.audienceId,
           });
           break;
           
@@ -157,13 +156,13 @@ export function createResendProxy(config: ResendProxyConfig): RequestHandler {
           
           result = await resend.contacts.get({
             id: body.id,
-            audienceId: body.audienceId,
+            audience_id: body.audienceId,
           });
           break;
           
         case 'list':
           result = await resend.contacts.list({
-            audienceId: body.audienceId,
+            audience_id: body.audienceId,
           });
           break;
           

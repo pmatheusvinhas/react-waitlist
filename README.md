@@ -236,6 +236,7 @@ Additional documentation:
 - [reCAPTCHA](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/recaptcha.md)
 - [Accessibility](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/accessibility.md)
 - [Security](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/security.md)
+- [Testing](https://github.com/pmatheusvinhas/react-waitlist/blob/main/docs/testing.md)
 - [Changelog](https://github.com/pmatheusvinhas/react-waitlist/blob/main/CHANGELOG.md)
 
 ## License

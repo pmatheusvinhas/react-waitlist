@@ -1,40 +1,44 @@
-import { useEffect, useRef } from 'react';
-import { WaitlistEventType, WaitlistEventData, EventManager } from '../utils/events';
+import { useEffect, useRef, useMemo } from 'react';
+import { WaitlistEventType, WaitlistEventData, EventManager, createEventManager } from '../utils/events';
 
 /**
- * Hook for subscribing to waitlist events
- * @param eventManager Event manager instance
- * @param eventTypes Array of event types to subscribe to
- * @param handler Function to call when any of the events occur
- * @param deps Dependencies array for the effect
+ * Hook for managing waitlist events
+ * @returns Object with eventManager and utility methods
  */
-export const useWaitlistEvents = (
-  eventManager: EventManager,
-  eventTypes: WaitlistEventType[],
-  handler: (data: WaitlistEventData) => void,
-  deps: any[] = []
-): void => {
-  // Use a ref to store the handler to avoid unnecessary effect triggers
-  const handlerRef = useRef(handler);
-  
-  // Update the handler ref when the handler changes
-  useEffect(() => {
-    handlerRef.current = handler;
-  }, [handler]);
-  
-  // Subscribe to events
-  useEffect(() => {
-    if (!eventManager) return;
+export const useWaitlistEvents = () => {
+  // Create a single instance of the event manager
+  const eventManager = useMemo(() => createEventManager(), []);
+
+  // Return the event manager and utility methods
+  return {
+    eventManager,
     
-    // Create a wrapper that calls the current handler
-    const handlerWrapper = (data: WaitlistEventData) => {
-      handlerRef.current(data);
-    };
+    /**
+     * Subscribe to an event
+     * @param type Type of event to subscribe to
+     * @param handler Function to call when the event occurs
+     * @returns Function to unsubscribe
+     */
+    subscribe: (type: WaitlistEventType, handler: (data: WaitlistEventData) => void) => {
+      return eventManager.subscribe(type, handler);
+    },
     
-    // Subscribe to events
-    const unsubscribe = eventManager.subscribeToMany(eventTypes, handlerWrapper);
+    /**
+     * Subscribe to multiple event types
+     * @param types Array of event types to subscribe to
+     * @param handler Function to call when any of the events occur
+     * @returns Function to unsubscribe from all events
+     */
+    subscribeToMany: (types: WaitlistEventType[], handler: (data: WaitlistEventData) => void) => {
+      return eventManager.subscribeToMany(types, handler);
+    },
     
-    // Unsubscribe when the component unmounts or dependencies change
-    return unsubscribe;
-  }, [eventManager, eventTypes, ...deps]);
+    /**
+     * Emit an event
+     * @param data Event data
+     */
+    emit: (data: WaitlistEventData) => {
+      eventManager.emit(data);
+    }
+  };
 }; 

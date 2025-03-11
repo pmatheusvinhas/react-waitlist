@@ -120,7 +120,20 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   
   // Form state
   const [formState, setFormState] = useState<FormState>('idle');
-  const [formValues, setFormValues] = useState<Record<string, string | boolean>>({});
+  const [formValues, setFormValues] = useState<Record<string, string | boolean>>(() => {
+    // Initialize with default values
+    const initialValues: Record<string, string | boolean> = {};
+    fields.forEach((field) => {
+      if (field.defaultValue !== undefined) {
+        initialValues[field.name] = field.defaultValue;
+      } else if (field.type === 'checkbox') {
+        initialValues[field.name] = false;
+      } else {
+        initialValues[field.name] = '';
+      }
+    });
+    return initialValues;
+  });
   const [validationResults, setValidationResults] = useState<Record<string, { valid: boolean; message?: string }>>({});
   const [errorMessage, setErrorMessage] = useState<string>('');
   
@@ -128,7 +141,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   const formStartTime = useRef<number>(Date.now());
   const honeypotFieldName = useRef<string>(generateHoneypotFieldName());
   
-  // Initialize form values with default values
+  // Update form values when fields change
   useEffect(() => {
     const initialValues: Record<string, string | boolean> = {};
     fields.forEach((field) => {
@@ -234,7 +247,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
     try {
       // Execute reCAPTCHA if enabled
       let reCaptchaToken: string | undefined;
-      if (reCaptchaEnabled && reCaptcha?.loaded) {
+      if (reCaptchaEnabled && reCaptcha?.isLoaded) {
         try {
           reCaptchaToken = await reCaptcha.executeReCaptcha();
           
@@ -254,21 +267,20 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
             const verifyResult = await verifyResponse.json();
             
             if (!verifyResult.success) {
-              console.error('reCAPTCHA verification failed:', verifyResult.error);
-              throw new Error(`reCAPTCHA verification failed: ${verifyResult.error}`);
+              throw new Error('reCAPTCHA verification failed');
             }
           }
         } catch (error) {
-          console.error('reCAPTCHA execution failed:', error);
+          // Handle reCAPTCHA error
           setFormState('error');
-          setErrorMessage('Could not verify that you are human. Please try again.');
+          announce('reCAPTCHA verification failed. Please try again.', true);
           
-          // Call onError callback if provided
+          // Call onError callback
           if (onError) {
             onError({
               timestamp: new Date().toISOString(),
               formData: { ...formValues },
-              error: error instanceof Error ? error : new Error('reCAPTCHA execution failed'),
+              error: error instanceof Error ? error : new Error('reCAPTCHA verification failed'),
             });
           }
           

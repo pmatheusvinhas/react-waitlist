@@ -117,7 +117,7 @@ export const useResendAudience = (
           },
           body: data ? JSON.stringify({
             action,
-            audienceId,
+            audience_id: audienceId,
             ...data
           }) : undefined,
         });
@@ -137,30 +137,30 @@ export const useResendAudience = (
           case 'create':
             result = await resendClient.contacts.create({
               ...data,
-              audienceId,
+              audience_id: audienceId,
             });
             break;
           case 'update':
             result = await resendClient.contacts.update({
               ...data,
-              audienceId,
+              audience_id: audienceId,
             });
             break;
           case 'remove':
             result = await resendClient.contacts.remove({
               ...data,
-              audienceId,
+              audience_id: audienceId,
             });
             break;
           case 'get':
             result = await resendClient.contacts.get({
               ...data,
-              audienceId,
+              audience_id: audienceId,
             });
             break;
           case 'list':
             result = await resendClient.contacts.list({
-              audienceId,
+              audience_id: audienceId,
             });
             break;
           default:
