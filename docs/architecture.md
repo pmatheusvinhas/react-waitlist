@@ -2,12 +2,41 @@
 
 This document provides an overview of the React Waitlist architecture, explaining how the different components interact and the data flows through the system.
 
+## Design Philosophy
+
+React Waitlist is designed as a **complete, self-contained solution** for creating waitlist forms. The architecture follows these key principles:
+
+1. **Security First**: API keys and sensitive credentials should never be exposed in client-side code.
+
+2. **Flexibility**: Support multiple integration patterns to accommodate different application architectures.
+
+3. **Self-Contained**: All necessary components, utilities, and security features are included in the package.
+
+4. **Developer Experience**: Provide a seamless experience for developers while maintaining security best practices.
+
+The package includes both client-side components and server-side utilities that work together as a cohesive system. The server-side utilities are not external dependencies but an integral part of the package, designed to help you create secure endpoints that protect your API keys.
+
+## Integration Options
+
+React Waitlist offers three main integration patterns:
+
+1. **Server Component**: For frameworks with server-side rendering support, the `ServerWaitlist` component handles everything on the server, keeping API keys secure.
+
+2. **Client Component with Security Utilities**: For client-side React applications, the `WaitlistForm` component works with the included security utilities to create proxy endpoints that protect your API keys.
+
+3. **Custom Integration**: Use event callbacks to integrate with your existing backend systems, giving you complete control over the data flow.
+
 ## Component Architecture
 
 ```mermaid
 classDiagram
     class WaitlistForm {
         +props: WaitlistFormProps
+        +render()
+    }
+    
+    class ServerWaitlist {
+        +props: ServerWaitlistProps
         +render()
     }
     
@@ -38,10 +67,18 @@ classDiagram
         +unsubscribe()
     }
     
+    class SecurityUtilities {
+        +createResendProxy()
+        +createWebhookProxy()
+        +createRecaptchaProxy()
+    }
+    
     WaitlistForm --> useWaitlistForm: uses
+    ServerWaitlist --> useResendAudience: uses directly
     useWaitlistForm --> useResendAudience: uses (optional)
     useWaitlistForm --> useReCaptcha: uses (optional)
     WaitlistForm --> EventManager: uses
+    SecurityUtilities --> useResendAudience: protects
 ```
 
 ## Data Flow
@@ -60,76 +97,52 @@ flowchart TD
     I -->|Failed| G
     I -->|Passed| J
     J -->|Event: submit| K[Emit Events]
-    J --> L{Resend Integration?}
-    L -->|Yes| M[Call Resend API via Proxy]
-    L -->|No| N[Custom Handler]
-    M -->|Success| O[Success State]
-    M -->|Error| P[Error State]
-    N -->|Success| O
-    N -->|Error| P
-    O -->|Event: success| K
-    P -->|Event: error| K
-    O --> Q{Webhooks Configured?}
+    J --> L{Integration Method?}
+    
+    L -->|Server Component| M1[Direct API Access]
+    M1 --> O1[Success State]
+    
+    L -->|Client with Security Utils| M2[Call API via Proxy]
+    M2 --> O2[Success State]
+    
+    L -->|Custom Integration| M3[Custom Handler]
+    M3 --> O3[Success State]
+    
+    O1 -->|Event: success| K
+    O2 -->|Event: success| K
+    O3 -->|Event: success| K
+    
+    O1 --> Q{Webhooks Configured?}
+    O2 --> Q
+    O3 --> Q
     Q -->|Yes| R[Send Webhooks]
-```
-
-## Integration Options
-
-```mermaid
-flowchart LR
-    A[React Waitlist] --> B{Frontend Framework}
-    B --> C[React/CRA]
-    B --> D[Next.js]
-    B --> E[Vite]
-    B --> F[Other React Frameworks]
-    
-    A --> G{Backend Options}
-    G --> H[Express.js]
-    G --> I[Next.js API Routes]
-    G --> J[Serverless Functions]
-    G --> K[Firebase Functions]
-    G --> L[Custom Backend]
-    
-    A --> M{Integration Options}
-    M --> N[Resend Audiences]
-    M --> O[Custom Database]
-    M --> P[CRM Systems]
-    M --> Q[Marketing Tools]
 ```
 
 ## Security Architecture
 
 ```mermaid
 flowchart TD
-    A[Client-Side Component] --> B{API Keys Exposed?}
-    B -->|Yes| C[Security Risk!]
-    B -->|No| D[Secure Implementation]
+    A[React Waitlist Package] --> B{Integration Method}
     
-    A --> E[Proxy Endpoints]
-    E --> F[API Key Protection]
-    E --> G[Rate Limiting]
-    E --> H[Audience Restriction]
+    B -->|Server Component| C[ServerWaitlist]
+    C --> D[Direct API Access]
+    D --> E[API Keys Secure on Server]
     
-    A --> I[Bot Protection]
-    I --> J[Honeypot Fields]
-    I --> K[Submission Timing]
-    I --> L[reCAPTCHA v3]
-```
-
-## Client-Side vs Server-Side Usage
-
-```mermaid
-flowchart TD
-    A[React Waitlist] --> B{Deployment Type}
+    B -->|Client with Security Utils| F[WaitlistForm]
+    F --> G[Security Utilities]
+    G --> H[Proxy Endpoints]
+    H --> I[API Keys Secure on Server]
     
-    B -->|Client-Side| C[WaitlistForm Component]
-    C --> D[Requires Proxy Endpoints]
-    D --> E[Backend Services]
-    E --> F[Resend API]
+    B -->|Custom Integration| J[WaitlistForm with Callbacks]
+    J --> K[Your Custom Backend]
+    K --> L[API Keys Secure in Your Backend]
     
-    B -->|Server-Side| G[ServerWaitlist Component]
-    G --> H[Direct API Access]
-    H --> F
+    A --> M[Built-in Security Features]
+    M --> N[Honeypot Fields]
+    M --> O[Submission Timing]
+    M --> P[reCAPTCHA Integration]
+    M --> Q[Input Validation]
+    M --> R[Rate Limiting]
 ```
 
 ## Package Structure
@@ -195,19 +208,22 @@ sequenceDiagram
     Next->>User: Show success message
 ```
 
-### Serverless Implementation
+### Next.js Server Component Implementation
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant React as React App
-    participant Lambda as AWS Lambda
+    participant Next as Next.js Server Component
     participant Resend as Resend API
     
-    User->>React: Fill and submit form
-    React->>Lambda: POST /api/resend-proxy
-    Lambda->>Resend: Add contact to audience
-    Resend-->>Lambda: Response
-    Lambda-->>React: Proxy response
-    React->>User: Show success message
-``` 
+    User->>Next: View page with ServerWaitlist
+    Next->>Next: Render ServerWaitlist
+    User->>Next: Fill and submit form
+    Next->>Resend: Direct API call (server-side)
+    Resend-->>Next: Response
+    Next->>User: Show success message
+```
+
+## Conclusion
+
+React Waitlist is designed as a complete solution that prioritizes both security and developer experience. By providing multiple integration options and including all necessary security utilities within the package, it offers a self-contained system for creating secure and customizable waitlist forms. 

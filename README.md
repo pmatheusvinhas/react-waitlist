@@ -1,6 +1,6 @@
 # React Waitlist
 
-A customizable waitlist component for React that integrates with Resend audiences.
+A customizable, self-contained waitlist component for React that integrates with Resend audiences. This package provides everything you need to create beautiful, secure waitlist forms without external dependencies.
 
 ## Features
 
@@ -12,6 +12,7 @@ A customizable waitlist component for React that integrates with Resend audience
 - 🔌 Easy to integrate with any React application
 - 🔔 Event system for client-side integrations
 - 🪝 Webhook support for integration with external systems
+- 🛡️ Multiple security options built into the package
 
 ## Installation
 
@@ -29,6 +30,82 @@ yarn add react-waitlist
 npm install react-waitlist/server
 # or
 yarn add react-waitlist/server
+```
+
+## Integration Options
+
+React Waitlist is designed to be flexible and secure, offering multiple integration options depending on your application architecture:
+
+### 1. Server-Side Integration (Most Secure)
+
+For frameworks with server-side rendering support (Next.js App Router, Remix, etc.), use the `ServerWaitlist` component to keep API keys secure on the server:
+
+```jsx
+// app/page.js (Next.js App Router)
+import { ServerWaitlist } from 'react-waitlist/server';
+
+export default function Home() {
+  return (
+    <main>
+      <h1>My Awesome Product</h1>
+      <ServerWaitlist 
+        apiKey={process.env.RESEND_API_KEY} // Securely used on the server
+        resendAudienceId="your_audience_id"
+        title="Join Our Waitlist"
+      />
+    </main>
+  );
+}
+```
+
+### 2. Client-Side with Security Utilities (Recommended for most applications)
+
+For client-side React applications, use the included security utilities to create proxy endpoints that protect your API keys:
+
+```jsx
+// Frontend component
+import { WaitlistForm } from 'react-waitlist';
+
+function App() {
+  return (
+    <WaitlistForm 
+      resendAudienceId="your_audience_id"
+      resendProxyEndpoint="/api/resend-proxy"
+    />
+  );
+}
+
+// Backend proxy (part of this package)
+// api/resend-proxy.js
+import { createResendProxy } from 'react-waitlist/server';
+
+export default createResendProxy({
+  apiKey: process.env.RESEND_API_KEY,
+  allowedAudiences: ['your_audience_id'],
+});
+```
+
+### 3. Custom Integration with Your Own Backend
+
+Use event callbacks to integrate with your existing backend systems:
+
+```jsx
+import { WaitlistForm } from 'react-waitlist';
+
+function App() {
+  return (
+    <WaitlistForm 
+      onSuccess={({ formData }) => {
+        // Handle successful submission with your own backend
+        fetch('https://your-api.com/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      }}
+    />
+  );
+}
 ```
 
 ## Basic Usage
@@ -315,23 +392,37 @@ export async function POST(req) {
 
 ## Architecture
 
+React Waitlist is designed as a complete solution with both client and server components working together to provide security and flexibility.
+
 ```mermaid
 graph TD
     A[React Application] --> B[WaitlistForm Component]
-    B --> C{Using Resend?}
-    C -->|Yes| D[Proxy Endpoint]
-    C -->|No| E[Custom Handler]
-    D --> F[Resend API]
-    E --> G[Your Database/API]
+    B --> C{Integration Method?}
     
-    B --> H{Using reCAPTCHA?}
-    H -->|Yes| I[reCAPTCHA Proxy]
-    I --> J[Google reCAPTCHA API]
+    C -->|Server Component| D[ServerWaitlist]
+    D --> E[Direct Resend API Access]
+    E --> F[Resend API]
     
-    B --> K{Using Webhooks?}
-    K -->|Yes| L[Webhook Proxy]
-    L --> M[External Services]
+    C -->|Client with Security Utils| G[WaitlistForm]
+    G --> H[Security Utilities]
+    H --> I[Proxy Endpoints]
+    I --> F
+    
+    C -->|Custom Integration| J[WaitlistForm with Callbacks]
+    J --> K[Your Custom Backend]
+    
+    B --> L{Security Features}
+    L --> M[Honeypot]
+    L --> N[Submission Timing]
+    L --> O[reCAPTCHA]
+    
+    B --> P{Additional Features}
+    P --> Q[Webhooks]
+    P --> R[Analytics]
+    P --> S[Accessibility]
 ```
+
+The security utilities (`createResendProxy`, `createWebhookProxy`, `createRecaptchaProxy`) are included as part of this package, not external dependencies. They help you create secure endpoints that protect your API keys and credentials while maintaining a seamless developer experience.
 
 ## Documentation
 
