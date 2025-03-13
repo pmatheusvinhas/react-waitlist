@@ -1,10 +1,10 @@
-import { EventManager } from '../../src/utils/events';
+import { EventBus } from '../../src/core/events';
 
 describe('EventManager', () => {
   let eventManager;
 
   beforeEach(() => {
-    eventManager = new EventManager();
+    eventManager = new EventBus();
   });
 
   test('should initialize with handlers for all event types', () => {
@@ -15,12 +15,12 @@ describe('EventManager', () => {
 
   test('should subscribe to events', () => {
     const mockHandler = jest.fn();
-    const unsubscribe = eventManager.subscribe('view', mockHandler);
+    const unsubscribe = eventManager.subscribe('field_focus', mockHandler);
     
     expect(typeof unsubscribe).toBe('function');
     
     // Emitir um evento para verificar se o handler foi registrado
-    eventManager.emit({ type: 'view', timestamp: new Date().toISOString() });
+    eventManager.emit({ type: 'field_focus', timestamp: new Date().toISOString() });
     expect(mockHandler).toHaveBeenCalled();
   });
 
@@ -72,11 +72,11 @@ describe('EventManager', () => {
     const mockHandler1 = jest.fn();
     const mockHandler2 = jest.fn();
     
-    eventManager.subscribe('view', mockHandler1);
-    eventManager.subscribe('view', mockHandler2);
+    eventManager.subscribe('field_focus', mockHandler1);
+    eventManager.subscribe('field_focus', mockHandler2);
     
     const eventData = { 
-      type: 'view', 
+      type: 'field_focus', 
       timestamp: new Date().toISOString() 
     };
     
@@ -89,11 +89,11 @@ describe('EventManager', () => {
   test('should support subscribing to multiple events', () => {
     const mockHandler = jest.fn();
     
-    eventManager.subscribe('view', mockHandler);
+    eventManager.subscribe('field_focus', mockHandler);
     eventManager.subscribe('submit', mockHandler);
     
     const viewData = { 
-      type: 'view', 
+      type: 'field_focus', 
       timestamp: new Date().toISOString() 
     };
     
@@ -115,14 +115,14 @@ describe('EventManager', () => {
     const mockHandler = jest.fn();
     
     const unsubscribeAll = eventManager.subscribeToMany(
-      ['view', 'submit', 'success'], 
+      ['field_focus', 'submit', 'success'], 
       mockHandler
     );
     
     expect(typeof unsubscribeAll).toBe('function');
     
     // Emit events
-    eventManager.emit({ type: 'view', timestamp: new Date().toISOString() });
+    eventManager.emit({ type: 'field_focus', timestamp: new Date().toISOString() });
     eventManager.emit({ 
       type: 'submit', 
       timestamp: new Date().toISOString(),

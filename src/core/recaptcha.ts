@@ -1,4 +1,4 @@
-import { SecurityConfig } from '../types';
+import { SecurityConfig } from './types';
 
 /**
  * Interface for reCAPTCHA response
@@ -18,7 +18,7 @@ export interface ReCaptchaResponse {
 export const loadReCaptchaScript = (siteKey: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     // Check if script is already loaded
-    if (document.querySelector(`script[src*="recaptcha"]`)) {
+    if (typeof document !== 'undefined' && document.querySelector(`script[src*="recaptcha"]`)) {
       if (window.grecaptcha && window.grecaptcha.ready) {
         window.grecaptcha.ready(() => {
           resolve();
@@ -30,27 +30,31 @@ export const loadReCaptchaScript = (siteKey: string): Promise<void> => {
     }
 
     // Create script element
-    const script = document.createElement('script');
-    script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
-    script.async = true;
-    script.defer = true;
+    if (typeof document !== 'undefined') {
+      const script = document.createElement('script');
+      script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+      script.async = true;
+      script.defer = true;
 
-    // Set up callbacks
-    script.onload = () => {
-      if (window.grecaptcha) {
-        window.grecaptcha.ready(() => {
-          resolve();
-        });
-      } else {
-        reject(new Error('reCAPTCHA not available'));
-      }
-    };
-    script.onerror = () => {
-      reject(new Error('Failed to load reCAPTCHA'));
-    };
+      // Set up callbacks
+      script.onload = () => {
+        if (window.grecaptcha) {
+          window.grecaptcha.ready(() => {
+            resolve();
+          });
+        } else {
+          reject(new Error('reCAPTCHA not available'));
+        }
+      };
+      script.onerror = () => {
+        reject(new Error('Failed to load reCAPTCHA'));
+      };
 
-    // Add script to document
-    document.head.appendChild(script);
+      // Add script to document
+      document.head.appendChild(script);
+    } else {
+      reject(new Error('Document not available'));
+    }
   });
 };
 
@@ -61,7 +65,7 @@ export const executeReCaptcha = async (
   siteKey: string,
   action: string = 'submit_waitlist'
 ): Promise<string> => {
-  if (!window.grecaptcha) {
+  if (typeof window === 'undefined' || !window.grecaptcha) {
     throw new Error('reCAPTCHA not loaded');
   }
 
@@ -121,13 +125,6 @@ export const verifyReCaptchaToken = async (
     console.error('reCAPTCHA verification failed:', error);
     return { valid: false, error: 'Verification request failed' };
   }
-};
-
-/**
- * Check if reCAPTCHA is enabled in security config
- */
-export const isReCaptchaEnabled = (security?: SecurityConfig): boolean => {
-  return Boolean(security?.enableReCaptcha && security?.reCaptchaSiteKey);
 };
 
 // Add type definition for window object

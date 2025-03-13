@@ -405,39 +405,57 @@ For detailed customization options and examples, see the [Customization Guide](d
 
 ## Architecture
 
-React Waitlist is designed as a complete solution with both client and server components working together to provide security and flexibility.
+React Waitlist is designed with a modular architecture that separates concerns and promotes maintainability:
+
+### Core Modules
+
+The library is built around a set of core modules that handle specific functionality:
+
+- **core/types**: Type definitions for the entire library
+- **core/events**: Event system for tracking user interactions
+- **core/validation**: Form validation logic
+- **core/security**: Security features like honeypot fields and bot detection
+- **core/analytics**: Analytics tracking integrations
+- **core/webhook**: Webhook handling for external integrations
+
+### Component Architecture
+
+The component architecture follows a modular approach:
 
 ```mermaid
 graph TD
-    A[React Application] --> B[WaitlistForm Component]
-    B --> C{Integration Method?}
+    A[Application] --> B{Integration Method}
     
-    C -->|Server Component| D[ServerWaitlist]
-    D --> E[Direct Resend API Access]
-    E --> F[Resend API]
-    D --> G[ClientWaitlist]
-    G --> H[WaitlistForm]
+    B -->|Client-Side| C[WaitlistForm]
+    C --> D[Core Modules]
     
-    C -->|Client with Security Utils| I[WaitlistForm]
-    I --> J[Security Utilities]
-    J --> K[Proxy Endpoints]
-    K --> F
+    B -->|Server-Side| E[ServerWaitlist]
+    E --> F[ClientWaitlist]
+    F --> C
     
-    C -->|Custom Integration| L[WaitlistForm with Callbacks]
-    L --> M[Your Custom Backend]
-    
-    B --> N{Security Features}
-    N --> O[Honeypot]
-    N --> P[Submission Timing]
-    N --> Q[reCAPTCHA]
-    
-    B --> R{Additional Features}
-    R --> S[Webhooks]
-    R --> T[Analytics]
-    R --> U[Accessibility]
+    D --> G[events]
+    D --> H[validation]
+    D --> I[security]
+    D --> J[analytics]
+    D --> K[webhook]
 ```
 
-The security utilities (`createResendProxy`, `createWebhookProxy`, `createRecaptchaProxy`) are included as part of this package, not external dependencies. They help you create secure endpoints that protect your API keys and credentials while maintaining a seamless developer experience.
+### Package Structure
+
+The package is organized into several subpackages:
+
+- **react-waitlist**: Main package with client-side components
+- **react-waitlist/server**: Server-side components and utilities
+- **react-waitlist/client**: Client components for hydration in SSR
+
+This modular approach allows for:
+
+1. **Tree-shaking**: Only import what you need
+2. **Separation of concerns**: Each module has a specific responsibility
+3. **Testability**: Modules can be tested in isolation
+4. **Maintainability**: Changes to one module don't affect others
+
+For more detailed information about the architecture, see the [Architecture Guide](docs/architecture.md).
 
 ## Documentation
 

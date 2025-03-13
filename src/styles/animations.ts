@@ -1,5 +1,5 @@
 import { CSSProperties } from 'react';
-import { ThemeConfig } from '../types';
+import { ThemeConfig } from '../core/types';
 
 /**
  * Animation configuration

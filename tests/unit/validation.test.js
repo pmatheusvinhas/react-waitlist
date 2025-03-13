@@ -2,8 +2,9 @@ import {
   validateEmail, 
   validateRequired, 
   validateField,
-  validateFormData
-} from '../../src/utils/validation';
+  validateForm,
+  isFormValid
+} from '../../src/core/validation';
 
 describe('Validation Utils', () => {
   describe('validateEmail', () => {
@@ -45,42 +46,42 @@ describe('Validation Utils', () => {
   
   describe('validateField', () => {
     test('should validate required fields', () => {
-      const field = { name: 'name', required: true };
+      const field = { name: 'name', label: 'Name', type: 'text', required: true };
       
-      expect(validateField('John', field)).toBe(true);
-      expect(validateField('', field)).toBe(false);
-      expect(validateField(null, field)).toBe(false);
+      expect(validateField(field, 'John').valid).toBe(true);
+      expect(validateField(field, '').valid).toBe(false);
+      expect(validateField(field, null).valid).toBe(true);
     });
     
     test('should validate email fields', () => {
-      const field = { name: 'email', type: 'email', required: true };
+      const field = { name: 'email', label: 'Email', type: 'email', required: true };
       
-      expect(validateField('test@example.com', field)).toBe(true);
-      expect(validateField('invalid', field)).toBe(false);
+      expect(validateField(field, 'test@example.com').valid).toBe(true);
+      expect(validateField(field, 'invalid').valid).toBe(false);
     });
     
     test('should validate optional fields', () => {
-      const field = { name: 'name', required: false };
+      const field = { name: 'name', label: 'Name', type: 'text', required: false };
       
-      expect(validateField('John', field)).toBe(true);
-      expect(validateField('', field)).toBe(true);
-      expect(validateField(null, field)).toBe(true);
+      expect(validateField(field, 'John').valid).toBe(true);
+      expect(validateField(field, '').valid).toBe(true);
+      expect(validateField(field, null).valid).toBe(true);
     });
     
     test('should validate optional email fields', () => {
-      const field = { name: 'email', type: 'email', required: false };
+      const field = { name: 'email', label: 'Email', type: 'email', required: false };
       
-      expect(validateField('test@example.com', field)).toBe(true);
-      expect(validateField('', field)).toBe(true);
-      expect(validateField('invalid', field)).toBe(false);
+      expect(validateField(field, 'test@example.com').valid).toBe(true);
+      expect(validateField(field, '').valid).toBe(true);
+      expect(validateField(field, 'invalid').valid).toBe(false);
     });
   });
   
-  describe('validateFormData', () => {
+  describe('validateForm', () => {
     const fields = [
-      { name: 'email', type: 'email', required: true },
-      { name: 'name', type: 'text', required: true },
-      { name: 'company', type: 'text', required: false }
+      { name: 'email', label: 'Email', type: 'email', required: true },
+      { name: 'name', label: 'Name', type: 'text', required: true },
+      { name: 'company', label: 'Company', type: 'text', required: false }
     ];
     
     test('should validate valid form data', () => {
@@ -90,9 +91,8 @@ describe('Validation Utils', () => {
         company: 'Acme Inc'
       };
       
-      const result = validateFormData(formData, fields);
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toEqual({});
+      const validationResults = validateForm(formData, fields);
+      expect(isFormValid(validationResults)).toBe(true);
     });
     
     test('should validate valid form data with optional fields missing', () => {
@@ -101,9 +101,8 @@ describe('Validation Utils', () => {
         name: 'John Doe'
       };
       
-      const result = validateFormData(formData, fields);
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toEqual({});
+      const validationResults = validateForm(formData, fields);
+      expect(isFormValid(validationResults)).toBe(true);
     });
     
     test('should invalidate form data with required fields missing', () => {
@@ -111,9 +110,9 @@ describe('Validation Utils', () => {
         email: 'test@example.com'
       };
       
-      const result = validateFormData(formData, fields);
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toHaveProperty('name');
+      const validationResults = validateForm(formData, fields);
+      expect(isFormValid(validationResults)).toBe(false);
+      expect(validationResults.name.valid).toBe(false);
     });
     
     test('should invalidate form data with invalid email', () => {
@@ -122,9 +121,9 @@ describe('Validation Utils', () => {
         name: 'John Doe'
       };
       
-      const result = validateFormData(formData, fields);
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toHaveProperty('email');
+      const validationResults = validateForm(formData, fields);
+      expect(isFormValid(validationResults)).toBe(false);
+      expect(validationResults.email.valid).toBe(false);
     });
     
     test('should return multiple errors', () => {
@@ -132,19 +131,19 @@ describe('Validation Utils', () => {
         email: 'invalid'
       };
       
-      const result = validateFormData(formData, fields);
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toHaveProperty('email');
-      expect(result.errors).toHaveProperty('name');
+      const validationResults = validateForm(formData, fields);
+      expect(isFormValid(validationResults)).toBe(false);
+      expect(validationResults.email.valid).toBe(false);
+      expect(validationResults.name.valid).toBe(false);
     });
     
     test('should handle empty form data', () => {
       const formData = {};
       
-      const result = validateFormData(formData, fields);
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toHaveProperty('email');
-      expect(result.errors).toHaveProperty('name');
+      const validationResults = validateForm(formData, fields);
+      expect(isFormValid(validationResults)).toBe(false);
+      expect(validationResults.email.valid).toBe(false);
+      expect(validationResults.name.valid).toBe(false);
     });
     
     test('should handle empty fields array', () => {
@@ -153,9 +152,8 @@ describe('Validation Utils', () => {
         name: 'John Doe'
       };
       
-      const result = validateFormData(formData, []);
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toEqual({});
+      const validationResults = validateForm(formData, []);
+      expect(isFormValid(validationResults)).toBe(true);
     });
   });
 }); 

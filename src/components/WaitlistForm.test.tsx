@@ -2,8 +2,8 @@ import React, { ReactNode } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import WaitlistForm from './WaitlistForm';
-import { Field } from '../types';
-import * as security from '../utils/security';
+import { Field } from '../core/types';
+import * as security from '../core/security';
 import { axe, toHaveNoViolations } from 'jest-axe';
 
 // Adicionar o matcher personalizado do jest-axe
@@ -48,19 +48,18 @@ jest.mock('../a11y/useA11y', () => ({
 }));
 
 // Mock do security.ts para desativar a verificação de bot
-jest.mock('../utils/security', () => {
+jest.mock('../core/security', () => {
   return {
-    checkForBotActivity: jest.fn().mockReturnValue({ isBot: false, reason: null }),
-    generateHoneypotField: jest.fn().mockReturnValue({ name: 'test_honeypot', value: '' }),
+    isLikelyBot: jest.fn().mockReturnValue({ isBot: false, reason: null }),
     generateHoneypotFieldName: jest.fn().mockReturnValue('test_honeypot_field'),
-    isSuspiciousSubmissionTime: jest.fn().mockReturnValue(false),
     getHoneypotStyles: jest.fn().mockReturnValue({
       position: 'absolute',
       left: '-9999px',
       top: '-9999px',
       opacity: 0,
     }),
-    isLikelyBot: jest.fn().mockReturnValue({ isBot: false, reason: null }),
+    isSuspiciousSubmissionTime: jest.fn().mockReturnValue(false),
+    isReCaptchaEnabled: jest.fn().mockReturnValue(false),
   };
 });
 
@@ -80,8 +79,8 @@ beforeEach(() => {
 
 describe('WaitlistForm', () => {
   const defaultProps = {
-    audienceId: 'test-audience-id',
-    proxyEndpoint: '/api/resend-proxy',
+    resendAudienceId: 'test-audience-id',
+    resendProxyEndpoint: '/api/resend-proxy',
   };
 
   test('renders the form with default props', () => {

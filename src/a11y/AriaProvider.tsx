@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { A11yConfig } from '../types';
+import { A11yConfig } from '../core/types';
 
 /**
  * Default ARIA labels
@@ -67,10 +67,10 @@ export const AriaProvider: React.FC<AriaProviderProps> = ({
   const mergedConfig = {
     announceStatus: config?.announceStatus ?? true,
     highContrast: config?.highContrast ?? false,
-    reducedMotion: config?.reducedMotion ?? 'auto',
+    reducedMotion: config?.reducedMotion ?? config?.reduceMotion ?? 'auto',
     ariaLabels: {
       ...defaultAriaLabels,
-      ...config?.ariaLabels,
+      ...(config?.ariaLabels || config?.labels),
     },
   };
 

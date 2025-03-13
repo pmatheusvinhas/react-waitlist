@@ -1,44 +1,87 @@
-import { useEffect, useRef, useMemo } from 'react';
-import { WaitlistEventType, WaitlistEventData, EventManager, createEventManager } from '../utils/events';
+import { useCallback } from 'react';
+import { eventBus, WaitlistEventType, WaitlistEventData, WaitlistEventHandler } from '../core/events';
 
 /**
- * Hook for managing waitlist events
- * @returns Object with eventManager and utility methods
+ * Hook for using the waitlist event bus
  */
 export const useWaitlistEvents = () => {
-  // Create a single instance of the event manager
-  const eventManager = useMemo(() => createEventManager(), []);
+  /**
+   * Subscribe to an event
+   */
+  const subscribe = useCallback((type: WaitlistEventType, handler: WaitlistEventHandler) => {
+    return eventBus.subscribe(type, handler);
+  }, []);
 
-  // Return the event manager and utility methods
+  /**
+   * Subscribe to multiple events
+   */
+  const subscribeToMany = useCallback((types: WaitlistEventType[], handler: WaitlistEventHandler) => {
+    return eventBus.subscribeToMany(types, handler);
+  }, []);
+
+  /**
+   * Emit an event
+   */
+  const emit = useCallback((data: WaitlistEventData) => {
+    eventBus.emit(data);
+  }, []);
+
+  /**
+   * Emit a field focus event
+   */
+  const emitFieldFocus = useCallback((field: string) => {
+    eventBus.emit({
+      type: 'field_focus',
+      timestamp: new Date().toISOString(),
+      field,
+    });
+  }, []);
+
+  /**
+   * Emit a submit event
+   */
+  const emitSubmit = useCallback((formData: Record<string, any>) => {
+    eventBus.emit({
+      type: 'submit',
+      timestamp: new Date().toISOString(),
+      formData,
+    });
+  }, []);
+
+  /**
+   * Emit a success event
+   */
+  const emitSuccess = useCallback((formData: Record<string, any>, response: any) => {
+    eventBus.emit({
+      type: 'success',
+      timestamp: new Date().toISOString(),
+      formData,
+      response,
+    });
+  }, []);
+
+  /**
+   * Emit an error event
+   */
+  const emitError = useCallback((formData: Record<string, any>, error: Error) => {
+    eventBus.emit({
+      type: 'error',
+      timestamp: new Date().toISOString(),
+      formData,
+      error: {
+        message: error.message,
+        code: (error as any).code,
+      },
+    });
+  }, []);
+
   return {
-    eventManager,
-    
-    /**
-     * Subscribe to an event
-     * @param type Type of event to subscribe to
-     * @param handler Function to call when the event occurs
-     * @returns Function to unsubscribe
-     */
-    subscribe: (type: WaitlistEventType, handler: (data: WaitlistEventData) => void) => {
-      return eventManager.subscribe(type, handler);
-    },
-    
-    /**
-     * Subscribe to multiple event types
-     * @param types Array of event types to subscribe to
-     * @param handler Function to call when any of the events occur
-     * @returns Function to unsubscribe from all events
-     */
-    subscribeToMany: (types: WaitlistEventType[], handler: (data: WaitlistEventData) => void) => {
-      return eventManager.subscribeToMany(types, handler);
-    },
-    
-    /**
-     * Emit an event
-     * @param data Event data
-     */
-    emit: (data: WaitlistEventData) => {
-      eventManager.emit(data);
-    }
+    subscribe,
+    subscribeToMany,
+    emit,
+    emitFieldFocus,
+    emitSubmit,
+    emitSuccess,
+    emitError,
   };
 }; 

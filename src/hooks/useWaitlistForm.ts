@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Field, SecurityConfig, ResendMapping, WebhookConfig } from '../types';
-import { validateForm, isFormValid, generateHoneypotFieldName, isLikelyBot, trackEvent, sendWebhooks, createEventManager, WaitlistEventData } from '../utils';
+import { Field, SecurityConfig, ResendMapping, WebhookConfig, WaitlistEventData } from '../core/types';
+import { validateForm, isFormValid } from '../core/validation';
+import { generateHoneypotFieldName, isLikelyBot } from '../core/security';
+import { eventBus } from '../core/events';
+import { trackEvent } from '../core/analytics';
+import { sendWebhooks } from '../core/webhook';
 import { Resend } from 'resend';
 import { useResendAudience, ResendContact } from './useResendAudience';
 
@@ -61,8 +65,8 @@ export interface UseWaitlistFormReturn {
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   /** Reset form */
   resetForm: () => void;
-  /** Event manager */
-  eventManager: ReturnType<typeof createEventManager>;
+  /** Event bus */
+  eventManager: typeof eventBus;
 }
 
 /**
@@ -94,9 +98,6 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     audienceId: resendAudienceId,
     proxyEndpoint: resendProxyEndpoint,
   }) : null;
-
-  // Create event manager
-  const eventManager = useRef(createEventManager()).current;
 
   // Form state
   const [formState, setFormState] = useState<FormState>('idle');
@@ -162,10 +163,10 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     };
     
     // Subscribe to events
-    const unsubscribeView = eventManager.subscribe('view', viewHandler);
-    const unsubscribeSubmit = eventManager.subscribe('submit', submitHandler);
-    const unsubscribeSuccess = eventManager.subscribe('success', successHandler);
-    const unsubscribeError = eventManager.subscribe('error', errorHandler);
+    const unsubscribeView = eventBus.subscribe('field_focus', viewHandler);
+    const unsubscribeSubmit = eventBus.subscribe('submit', submitHandler);
+    const unsubscribeSuccess = eventBus.subscribe('success', successHandler);
+    const unsubscribeError = eventBus.subscribe('error', errorHandler);
     
     // Unsubscribe when component unmounts
     return () => {
@@ -174,22 +175,22 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
       unsubscribeSuccess();
       unsubscribeError();
     };
-  }, [eventManager, onView, onSubmit, onSuccess, onError]);
+  }, [onView, onSubmit, onSuccess, onError]);
   
   // Track view event
   useEffect(() => {
     // Track analytics event
-    trackEvent(analytics, { event: 'view' });
+    trackEvent(analytics, { event: 'field_focus' });
     
     // Send webhooks
-    sendWebhooks(webhooks, 'view', {}, undefined, undefined, webhookProxyEndpoint);
+    sendWebhooks(webhooks, 'field_focus', {}, undefined, undefined, webhookProxyEndpoint);
     
     // Emit view event
-    eventManager.emit({
-      type: 'view',
+    eventBus.emit({
+      type: 'field_focus',
       timestamp: new Date().toISOString(),
     });
-  }, [analytics, webhooks, eventManager, webhookProxyEndpoint]);
+  }, [analytics, webhooks, webhookProxyEndpoint]);
   
   // Handle input change
   const handleChange = (
@@ -219,7 +220,7 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     // Track focus event (only once per field)
     if (name === 'email' && !formValues[name]) {
       trackEvent(analytics, { 
-        event: 'focus',
+        event: 'field_focus',
         properties: { field: name }
       });
     }
@@ -239,7 +240,7 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     sendWebhooks(webhooks, 'submit', formValues, undefined, undefined, webhookProxyEndpoint);
     
     // Emit submit event
-    eventManager.emit({
+    eventBus.emit({
       type: 'submit',
       timestamp: new Date().toISOString(),
       formData: { ...formValues },
@@ -303,7 +304,7 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
       setFormState('success');
       
       // Emit success event
-      eventManager.emit({
+      eventBus.emit({
         type: 'success',
         timestamp: new Date().toISOString(),
         formData: { ...formValues },
@@ -337,7 +338,7 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
       );
       
       // Emit error event
-      eventManager.emit({
+      eventBus.emit({
         type: 'error',
         timestamp: new Date().toISOString(),
         formData: { ...formValues },
@@ -379,6 +380,6 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     handleChange,
     handleSubmit,
     resetForm,
-    eventManager,
+    eventManager: eventBus,
   };
 }; 

@@ -1,24 +1,21 @@
 import React from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { useWaitlistEvents } from '../../src/hooks/useWaitlistEvents';
-import { EventManager, createEventManager } from '../../src/utils/events';
+import { eventBus } from '../../src/core/events';
 
-// Mock EventManager
-jest.mock('../../src/utils/events', () => {
+// Mock eventBus
+jest.mock('../../src/core/events', () => {
   const mockSubscribe = jest.fn().mockReturnValue(jest.fn());
   const mockSubscribeToMany = jest.fn().mockReturnValue(jest.fn());
   const mockEmit = jest.fn();
   
-  const mockEventManager = {
-    subscribe: mockSubscribe,
-    subscribeToMany: mockSubscribeToMany,
-    emit: mockEmit
-  };
-  
   return {
     __esModule: true,
-    EventManager: jest.fn().mockImplementation(() => mockEventManager),
-    createEventManager: jest.fn().mockReturnValue(mockEventManager)
+    eventBus: {
+      subscribe: mockSubscribe,
+      subscribeToMany: mockSubscribeToMany,
+      emit: mockEmit
+    }
   };
 });
 
@@ -27,122 +24,87 @@ describe('useWaitlistEvents', () => {
     jest.clearAllMocks();
   });
   
-  test('should return event manager instance', () => {
-    const { result } = renderHook(() => useWaitlistEvents());
-    
-    expect(result.current.eventManager).toBeDefined();
-    expect(createEventManager).toHaveBeenCalled();
-  });
-  
   test('should provide subscribe method', () => {
     const { result } = renderHook(() => useWaitlistEvents());
     const mockHandler = jest.fn();
     
-    result.current.subscribe('view', mockHandler);
+    result.current.subscribe('field_focus', mockHandler);
     
-    expect(result.current.eventManager.subscribe).toHaveBeenCalledWith('view', mockHandler);
+    expect(eventBus.subscribe).toHaveBeenCalledWith('field_focus', mockHandler);
   });
   
   test('should provide subscribeToMany method', () => {
     const { result } = renderHook(() => useWaitlistEvents());
     const mockHandler = jest.fn();
-    const eventTypes = ['view', 'submit', 'success'];
+    const eventTypes = ['field_focus', 'submit', 'success'];
     
     result.current.subscribeToMany(eventTypes, mockHandler);
     
-    expect(result.current.eventManager.subscribeToMany).toHaveBeenCalledWith(eventTypes, mockHandler);
+    expect(eventBus.subscribeToMany).toHaveBeenCalledWith(eventTypes, mockHandler);
   });
   
   test('should provide emit method', () => {
     const { result } = renderHook(() => useWaitlistEvents());
     const eventData = { 
-      type: 'view', 
+      type: 'field_focus', 
       timestamp: new Date().toISOString() 
     };
     
     result.current.emit(eventData);
     
-    expect(result.current.eventManager.emit).toHaveBeenCalledWith(eventData);
+    expect(eventBus.emit).toHaveBeenCalledWith(eventData);
   });
   
-  test('should clean up subscriptions on unmount', () => {
-    // Create an unsubscribe mock function
-    const unsubscribeMock = jest.fn();
-    
-    // Override the subscribe behavior for this test only
-    const mockSubscribe = jest.fn().mockReturnValue(unsubscribeMock);
-    
-    // Create an EventManager mock with custom behavior
-    const mockEventManager = {
-      subscribe: mockSubscribe,
-      subscribeToMany: jest.fn(),
-      emit: jest.fn()
-    };
-    
-    // Override createEventManager for this test
-    createEventManager.mockReturnValueOnce(mockEventManager);
-
-    // Render the hook
-    const { result, unmount } = renderHook(() => useWaitlistEvents());
-    
-    // Create a subscription
-    const mockHandler = jest.fn();
-    const unsubscribe = result.current.subscribe('view', mockHandler);
-    
-    // Verify subscribe was called
-    expect(mockSubscribe).toHaveBeenCalledWith('view', mockHandler);
-    
-    // Verify the unsubscribe function was returned
-    expect(unsubscribe).toBe(unsubscribeMock);
-    
-    // Unmount the hook
-    unmount();
-  });
-  
-  test('should handle multiple subscriptions', () => {
-    // Create unsubscribe mock functions
-    const unsubscribeMock1 = jest.fn();
-    const unsubscribeMock2 = jest.fn();
-    
-    // Create a subscribe mock that returns different unsubscribe functions
-    const mockSubscribe = jest.fn()
-      .mockReturnValueOnce(unsubscribeMock1)
-      .mockReturnValueOnce(unsubscribeMock2);
-    
-    // Create an EventManager mock with custom behavior
-    const mockEventManager = {
-      subscribe: mockSubscribe,
-      subscribeToMany: jest.fn(),
-      emit: jest.fn()
-    };
-    
-    // Override createEventManager for this test
-    createEventManager.mockReturnValueOnce(mockEventManager);
-
-    // Render the hook
+  test('should provide emitFieldFocus method', () => {
     const { result } = renderHook(() => useWaitlistEvents());
-
-    // Create multiple subscriptions
-    const handler1 = jest.fn();
-    const handler2 = jest.fn();
     
-    const unsubscribe1 = result.current.subscribe('view', handler1);
-    const unsubscribe2 = result.current.subscribe('submit', handler2);
+    result.current.emitFieldFocus('email');
     
-    // Verify subscribe was called correctly
-    expect(mockSubscribe).toHaveBeenCalledWith('view', handler1);
-    expect(mockSubscribe).toHaveBeenCalledWith('submit', handler2);
+    expect(eventBus.emit).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'field_focus',
+      field: 'email'
+    }));
+  });
+  
+  test('should provide emitSubmit method', () => {
+    const { result } = renderHook(() => useWaitlistEvents());
+    const formData = { email: 'test@example.com' };
     
-    // Verify the unsubscribe functions were returned correctly
-    expect(unsubscribe1).toBe(unsubscribeMock1);
-    expect(unsubscribe2).toBe(unsubscribeMock2);
+    result.current.emitSubmit(formData);
     
-    // Call the unsubscribe functions
-    unsubscribe1();
-    unsubscribe2();
+    expect(eventBus.emit).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'submit',
+      formData
+    }));
+  });
+  
+  test('should provide emitSuccess method', () => {
+    const { result } = renderHook(() => useWaitlistEvents());
+    const formData = { email: 'test@example.com' };
+    const response = { id: 'test-id' };
     
-    // Verify the unsubscribe functions were called
-    expect(unsubscribeMock1).toHaveBeenCalled();
-    expect(unsubscribeMock2).toHaveBeenCalled();
+    result.current.emitSuccess(formData, response);
+    
+    expect(eventBus.emit).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'success',
+      formData,
+      response
+    }));
+  });
+  
+  test('should provide emitError method', () => {
+    const { result } = renderHook(() => useWaitlistEvents());
+    const formData = { email: 'test@example.com' };
+    const error = new Error('Test error');
+    
+    result.current.emitError(formData, error);
+    
+    expect(eventBus.emit).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'error',
+      formData,
+      error: expect.objectContaining({
+        message: 'Test error'
+      })
+    }));
   });
 }); 

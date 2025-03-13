@@ -1,14 +1,51 @@
 # Architecture
 
-React Waitlist is designed as a complete solution with both client and server components working together to provide security and flexibility.
+React Waitlist is designed with a modular architecture that separates concerns and promotes maintainability.
+
+## Core Modules Architecture
+
+The library is built around a set of core modules, each with a specific responsibility:
+
+```mermaid
+graph TD
+    A[Application] --> B[Components]
+    B --> C[Core Modules]
+    
+    C --> D[types]
+    C --> E[events]
+    C --> F[validation]
+    C --> G[security]
+    C --> H[analytics]
+    C --> I[webhook]
+    C --> J[recaptcha]
+    
+    D -.-> E
+    D -.-> F
+    D -.-> G
+    D -.-> H
+    D -.-> I
+    D -.-> J
+```
+
+### Core Modules
+
+- **core/types**: Type definitions for the entire library
+- **core/events**: Event system for tracking user interactions
+- **core/validation**: Form validation logic
+- **core/security**: Security features like honeypot fields and bot detection
+- **core/analytics**: Analytics tracking integrations
+- **core/webhook**: Webhook handling for external integrations
+- **core/recaptcha**: reCAPTCHA integration
+
+This modular approach allows for better maintainability, testability, and tree-shaking.
 
 ## Component Architecture
 
-The library is structured around a core `WaitlistForm` component with several integration options:
+The component architecture follows a modular approach with three main integration methods:
 
 ### 1. Server-Side Rendering (SSR) Architecture
 
-For frameworks with server-side rendering support (Next.js App Router, Remix, etc.), React Waitlist provides a true server-side rendering solution:
+For frameworks with server-side rendering support (Next.js App Router, Remix, etc.):
 
 ```mermaid
 graph TD
@@ -17,7 +54,7 @@ graph TD
     A --> D[ClientWaitlist]
     D --> E[Hydration]
     E --> F[WaitlistForm]
-    F --> G[User Interaction]
+    F --> G[Core Modules]
 ```
 
 This architecture consists of two main components:
@@ -36,69 +73,65 @@ This architecture consists of two main components:
    - Uses React hooks for state management
    - Imported from `react-waitlist/client`
 
-This approach ensures that sensitive information like API keys stays on the server while providing a seamless user experience with client-side interactivity.
-
-#### Import Structure for SSR
-
-```jsx
-// In server components:
-import { ServerWaitlist } from 'react-waitlist/server';
-
-// In client components:
-import { ClientWaitlist } from 'react-waitlist/client';
-```
-
-This separation is crucial for frameworks like Next.js that enforce strict boundaries between server and client code.
-
 ### 2. Client-Side with Security Utilities
 
-For client-side React applications, React Waitlist provides security utilities to create proxy endpoints:
+For client-side React applications:
 
 ```mermaid
 graph TD
     A[React Application] --> B[WaitlistForm]
-    B --> C[API Requests]
-    C --> D[Proxy Endpoints]
-    D --> E[Resend API]
+    B --> C[Core Modules]
+    B --> D[API Requests]
+    D --> E[Proxy Endpoints]
+    E --> F[Resend API]
 ```
 
 ### 3. Custom Integration
 
-For applications with existing backend systems, React Waitlist provides event callbacks:
+For applications with existing backend systems:
 
 ```mermaid
 graph TD
     A[React Application] --> B[WaitlistForm]
-    B --> C[Event Callbacks]
-    C --> D[Your Custom Backend]
+    B --> C[Core Modules]
+    B --> D[Event Callbacks]
+    D --> E[Your Custom Backend]
 ```
 
 ## Package Structure
 
-React Waitlist is organized into several modules:
+The package is organized into several directories:
 
 ```
 react-waitlist/
-├── components/       # React components
-│   ├── WaitlistForm.tsx
-│   ├── ClientWaitlist.tsx
-│   └── ...
-├── server/           # Server-side components and utilities
-│   ├── serverComponent.tsx
-│   ├── proxy.ts
-│   ├── webhookProxy.ts
-│   └── recaptchaProxy.ts
-├── hooks/            # React hooks
-│   ├── useResendAudience.ts
-│   ├── useReCaptcha.ts
-│   └── ...
-├── utils/            # Utility functions
-│   ├── validation.ts
-│   ├── security.ts
-│   └── ...
-├── types/            # TypeScript type definitions
-├── styles/           # Styling utilities
-└── a11y/             # Accessibility utilities
+├── src/
+│   ├── components/       # React components
+│   │   ├── WaitlistForm.tsx
+│   │   └── ...
+│   ├── core/             # Core modules
+│   │   ├── types.ts
+│   │   ├── events.ts
+│   │   ├── validation.ts
+│   │   ├── security.ts
+│   │   ├── analytics.ts
+│   │   ├── webhook.ts
+│   │   └── recaptcha.ts
+│   ├── hooks/            # React hooks
+│   │   ├── useWaitlistForm.ts
+│   │   ├── useWaitlistEvents.ts
+│   │   └── ...
+│   ├── server/           # Server-side components and utilities
+│   │   ├── serverComponent.tsx
+│   │   ├── proxy.ts
+│   │   └── ...
+│   ├── styles/           # Styling utilities
+│   │   ├── theme.ts
+│   │   └── ...
+│   └── a11y/             # Accessibility utilities
+│       ├── AriaProvider.tsx
+│       └── ...
+├── client.ts             # Client-side entry point
+└── server.ts             # Server-side entry point
 ```
 
 ## Export Structure
@@ -122,19 +155,29 @@ The package provides multiple entry points:
 
 ## Data Flow
 
-### Server-Side Rendering Flow
+### Event System
 
-1. The `ServerWaitlist` component receives props on the server
-2. It serializes these props and renders a placeholder with a hidden JSON script tag
-3. The `ClientWaitlist` component is rendered on the client
-4. It finds the placeholder, extracts the serialized props, and hydrates the form
-5. The user interacts with the fully functional form
+The event system is a core part of the architecture, allowing for integration with analytics and external systems:
 
-### Client-Side Flow
+```mermaid
+graph TD
+    A[User Action] --> B[EventBus]
+    B --> C{Event Type}
+    C -->|field_focus| D[Field Focus Handler]
+    C -->|submit| E[Submit Handler]
+    C -->|success| F[Success Handler]
+    C -->|error| G[Error Handler]
+    
+    D --> H[Analytics]
+    E --> H
+    F --> H
+    G --> H
+    
+    F --> I[Webhooks]
+    G --> I
+```
 
-1. The `WaitlistForm` component is rendered directly
-2. It manages its own state and handles form submission
-3. API requests are sent to proxy endpoints or handled by custom callbacks
+The event system uses a publish-subscribe pattern, allowing components to subscribe to specific events and react accordingly.
 
 ## Security Architecture
 
@@ -146,21 +189,6 @@ React Waitlist implements multiple layers of security:
 4. **CORS Protection**: Proxy endpoints implement CORS protection
 5. **Rate Limiting**: Optional rate limiting on proxy endpoints
 
-## Event System
-
-The event system allows for integration with analytics and external systems:
-
-```mermaid
-graph TD
-    A[User Action] --> B[Form Event]
-    B --> C{Event Type}
-    C -->|view| D[onView Callback]
-    C -->|submit| E[onSubmit Callback]
-    C -->|success| F[onSuccess Callback]
-    C -->|error| G[onError Callback]
-    F --> H[Webhooks]
-```
-
 ## Accessibility Architecture
 
 Accessibility is built into the component architecture:
@@ -169,4 +197,14 @@ Accessibility is built into the component architecture:
 2. **Keyboard Navigation**: Full keyboard support
 3. **Screen Reader Support**: Announcements for form state changes
 4. **Reduced Motion Support**: Respects user preferences for reduced motion
-5. **Focus Management**: Proper focus handling for form submission and errors 
+5. **Focus Management**: Proper focus handling for form submission and errors
+
+## Testing Architecture
+
+The testing architecture follows the modular approach:
+
+1. **Unit Tests**: Test individual modules in isolation
+2. **Integration Tests**: Test components working together
+3. **End-to-End Tests**: Test the full user flow
+
+Each core module has its own set of unit tests, ensuring that the functionality works as expected. 

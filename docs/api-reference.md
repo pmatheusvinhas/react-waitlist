@@ -40,10 +40,10 @@ import { WaitlistForm } from 'react-waitlist';
 | `webhooks` | `WebhookConfig[]` | No | Array of webhook configurations |
 | `webhookProxyEndpoint` | `string` | No | The URL of the proxy endpoint for webhook calls |
 | `recaptchaProxyEndpoint` | `string` | No | The URL of the proxy endpoint for reCAPTCHA verification |
-| `onView` | `(data: ViewEventData) => void` | No | Callback when the form is viewed |
-| `onSubmit` | `(data: SubmitEventData) => void` | No | Callback when the form is submitted |
-| `onSuccess` | `(data: SuccessEventData) => void` | No | Callback when submission is successful |
-| `onError` | `(data: ErrorEventData) => void` | No | Callback when an error occurs |
+| `onFieldFocus` | `(data: { field: string; timestamp: string }) => void` | No | Callback when a field is focused |
+| `onSubmit` | `(data: { timestamp: string; formData: Record<string, any> }) => void` | No | Callback when the form is submitted |
+| `onSuccess` | `(data: { timestamp: string; formData: Record<string, any>; response: any }) => Promise<{ success: boolean; error?: string }>` | No | Callback when submission is successful |
+| `onError` | `(data: { timestamp: string; formData: Record<string, any>; error: Error }) => void` | No | Callback when an error occurs |
 
 ### Server Components
 
@@ -193,11 +193,14 @@ Configuration for analytics tracking.
 
 ```typescript
 interface AnalyticsConfig {
-  trackView?: boolean;
-  trackSubmit?: boolean;
-  trackSuccess?: boolean;
-  trackError?: boolean;
-  customData?: Record<string, any>;
+  enabled?: boolean;
+  trackEvents?: ('field_focus' | 'submit' | 'success' | 'error')[];
+  integrations?: {
+    googleAnalytics?: boolean;
+    mixpanel?: string;
+    posthog?: string;
+    [key: string]: boolean | string | undefined;
+  };
 }
 ```
 
@@ -221,7 +224,7 @@ Configuration for a webhook.
 ```typescript
 interface WebhookConfig {
   url: string;
-  events: ('view' | 'submit' | 'success' | 'error')[];
+  events: ('field_focus' | 'submit' | 'success' | 'error')[];
   includeAllFields?: boolean;
   includeFields?: string[];
   excludeFields?: string[];

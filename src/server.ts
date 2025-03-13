@@ -1,17 +1,29 @@
-// Export server-specific components and utilities
-import ServerWaitlist from './server/serverComponent';
-import { createResendProxy, ResendProxyConfig } from './server/proxy';
-import { createWebhookProxy, WebhookProxyConfig } from './server/webhookProxy';
-import { createRecaptchaProxy } from './server/recaptchaProxy';
+/**
+ * Server-side components and utilities for React Waitlist
+ * This file is specifically for use with SSR frameworks
+ */
 
 // Export the server component
-export { ServerWaitlist };
-export default ServerWaitlist;
+export { default as ServerWaitlist } from './components/ServerWaitlist';
 
-// Export server-specific utilities
-export { createResendProxy, createWebhookProxy, createRecaptchaProxy };
-export type { ResendProxyConfig, WebhookProxyConfig };
+// Export server utilities
+export { createResendProxy } from './server/proxy';
+export type { ResendProxyConfig } from './server/proxy';
+export { createWebhookProxy } from './server/webhookProxy';
+export type { WebhookProxyConfig } from './server/webhookProxy';
 
-// Note: ClientWaitlist is intentionally not exported from this file
-// to prevent it from being imported in a server context.
-// It should be imported from 'react-waitlist/client' instead. 
+// Export types needed for the server component
+export type { 
+  Field, 
+  WaitlistProps, 
+  ThemeConfig, 
+  SecurityConfig, 
+  AnalyticsConfig, 
+  ResendMapping, 
+  WebhookConfig, 
+  A11yConfig, 
+  FrameworkConfig
+} from './core/types';
+
+// Export ServerWaitlistProps from the component file
+export type { ServerWaitlistProps } from './components/ServerWaitlist'; 

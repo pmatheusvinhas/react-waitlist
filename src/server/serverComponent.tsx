@@ -1,5 +1,5 @@
 import React from 'react';
-import { WaitlistProps } from '../types';
+import { WaitlistProps } from '../core/types';
 
 /**
  * Server-side waitlist component for frameworks with SSR support

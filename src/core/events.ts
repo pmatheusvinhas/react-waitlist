@@ -1,7 +1,7 @@
 /**
  * Types of events that can be emitted by the waitlist component
  */
-export type WaitlistEventType = 'view' | 'submit' | 'success' | 'error';
+export type WaitlistEventType = 'field_focus' | 'submit' | 'success' | 'error';
 
 /**
  * Data structure for events
@@ -11,9 +11,11 @@ export interface WaitlistEventData {
   type: WaitlistEventType;
   /** Timestamp of the event */
   timestamp: string;
+  /** Field name (for field_focus events) */
+  field?: string;
   /** Form data (for submit, success, error events) */
   formData?: Record<string, any>;
-  /** Response from Resend API (for success events) */
+  /** Response from API (for success events) */
   response?: any;
   /** Error information (for error events) */
   error?: {
@@ -28,11 +30,11 @@ export interface WaitlistEventData {
 export type WaitlistEventHandler = (data: WaitlistEventData) => void;
 
 /**
- * Event manager for handling waitlist events
+ * Event bus for handling waitlist events
  */
-export class EventManager {
+export class EventBus {
   private handlers: Record<WaitlistEventType, WaitlistEventHandler[]> = {
-    view: [],
+    field_focus: [],
     submit: [],
     success: [],
     error: [],
@@ -84,9 +86,5 @@ export class EventManager {
   }
 }
 
-/**
- * Create a new event manager
- */
-export const createEventManager = (): EventManager => {
-  return new EventManager();
-}; 
+// Singleton instance that can be shared
+export const eventBus = new EventBus(); 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { loadReCaptchaScript, executeReCaptcha } from '../utils/recaptcha';
+import { loadReCaptchaScript, executeReCaptcha } from '../core/recaptcha';
 
 interface UseReCaptchaOptions {
   siteKey: string;

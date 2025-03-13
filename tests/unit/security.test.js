@@ -1,158 +1,78 @@
 import { 
-  createHoneypotField, 
-  validateHoneypot,
-  validateSubmissionTime,
-  sanitizeFormData
-} from '../../src/utils/security';
+  generateHoneypotFieldName, 
+  getHoneypotStyles,
+  isSuspiciousSubmissionTime,
+  isLikelyBot
+} from '../../src/core/security';
 
 describe('Security Utils', () => {
-  describe('createHoneypotField', () => {
-    test('should create a honeypot field with default name', () => {
-      const honeypot = createHoneypotField();
+  describe('generateHoneypotFieldName', () => {
+    test('should generate a honeypot field name with default prefix', () => {
+      const fieldName = generateHoneypotFieldName();
       
-      expect(honeypot).toHaveProperty('name');
-      expect(honeypot.name).toContain('hp_');
-      expect(honeypot.name.length).toBeGreaterThan(3);
-      expect(honeypot).toHaveProperty('type', 'text');
-      expect(honeypot).toHaveProperty('style');
-      expect(honeypot.style).toHaveProperty('display', 'none');
-    });
-    
-    test('should create a honeypot field with custom prefix', () => {
-      const honeypot = createHoneypotField('custom_');
-      
-      expect(honeypot.name).toContain('custom_');
-      expect(honeypot.name.length).toBeGreaterThan(7);
+      expect(fieldName).toContain('hp_');
+      expect(fieldName.length).toBeGreaterThan(3);
     });
   });
   
-  describe('validateHoneypot', () => {
-    test('should validate empty honeypot field', () => {
-      const formData = {
-        email: 'test@example.com',
-        hp_123: ''
-      };
+  describe('getHoneypotStyles', () => {
+    test('should return styles for hiding honeypot field', () => {
+      const styles = getHoneypotStyles();
       
-      const honeypotField = { name: 'hp_123' };
-      
-      expect(validateHoneypot(formData, honeypotField)).toBe(true);
-    });
-    
-    test('should invalidate filled honeypot field', () => {
-      const formData = {
-        email: 'test@example.com',
-        hp_123: 'bot input'
-      };
-      
-      const honeypotField = { name: 'hp_123' };
-      
-      expect(validateHoneypot(formData, honeypotField)).toBe(false);
-    });
-    
-    test('should validate when honeypot field is missing', () => {
-      const formData = {
-        email: 'test@example.com'
-      };
-      
-      const honeypotField = { name: 'hp_123' };
-      
-      expect(validateHoneypot(formData, honeypotField)).toBe(true);
-    });
-    
-    test('should validate when honeypot field is null', () => {
-      const formData = {
-        email: 'test@example.com',
-        hp_123: null
-      };
-      
-      const honeypotField = { name: 'hp_123' };
-      
-      expect(validateHoneypot(formData, honeypotField)).toBe(true);
+      expect(styles).toHaveProperty('position', 'absolute');
+      expect(styles).toHaveProperty('opacity', 0);
+      expect(styles).toHaveProperty('pointerEvents', 'none');
     });
   });
   
-  describe('validateSubmissionTime', () => {
+  describe('isSuspiciousSubmissionTime', () => {
     test('should validate submission after minimum time', () => {
       const startTime = Date.now() - 5000; // 5 seconds ago
       const minTime = 3000; // 3 seconds
       
-      expect(validateSubmissionTime(startTime, minTime)).toBe(true);
+      expect(isSuspiciousSubmissionTime(startTime, minTime)).toBe(false);
     });
     
     test('should invalidate submission before minimum time', () => {
       const startTime = Date.now() - 1000; // 1 second ago
       const minTime = 3000; // 3 seconds
       
-      expect(validateSubmissionTime(startTime, minTime)).toBe(false);
+      expect(isSuspiciousSubmissionTime(startTime, minTime)).toBe(true);
     });
     
     test('should validate with default minimum time', () => {
       const startTime = Date.now() - 3000; // 3 seconds ago
       
-      expect(validateSubmissionTime(startTime)).toBe(true);
+      expect(isSuspiciousSubmissionTime(startTime)).toBe(false);
     });
     
     test('should handle invalid start time', () => {
-      expect(validateSubmissionTime(null)).toBe(false);
-      expect(validateSubmissionTime(undefined)).toBe(false);
-      expect(validateSubmissionTime('invalid')).toBe(false);
+      expect(isSuspiciousSubmissionTime(null)).toBe(false);
+      expect(isSuspiciousSubmissionTime(undefined)).toBe(false);
+      expect(isSuspiciousSubmissionTime('invalid')).toBe(false);
     });
   });
   
-  describe('sanitizeFormData', () => {
-    test('should remove honeypot fields', () => {
-      const formData = {
-        email: 'test@example.com',
-        name: 'John Doe',
-        hp_123: '',
-        _hp_456: 'bot input'
-      };
+  describe('isLikelyBot', () => {
+    test('should detect bot with filled honeypot', () => {
+      const result = isLikelyBot('bot input', Date.now() - 5000);
       
-      const sanitized = sanitizeFormData(formData);
-      
-      expect(sanitized).toHaveProperty('email');
-      expect(sanitized).toHaveProperty('name');
-      expect(sanitized).not.toHaveProperty('hp_123');
-      expect(sanitized).not.toHaveProperty('_hp_456');
+      expect(result.isBot).toBe(true);
+      expect(result.reason).toBe('honeypot_filled');
     });
     
-    test('should trim string values', () => {
-      const formData = {
-        email: ' test@example.com ',
-        name: ' John Doe '
-      };
+    test('should detect bot with suspicious submission time', () => {
+      const result = isLikelyBot('', Date.now() - 500, 1500);
       
-      const sanitized = sanitizeFormData(formData);
-      
-      expect(sanitized.email).toBe('test@example.com');
-      expect(sanitized.name).toBe('John Doe');
+      expect(result.isBot).toBe(true);
+      expect(result.reason).toBe('too_fast');
     });
     
-    test('should handle non-string values', () => {
-      const formData = {
-        email: 'test@example.com',
-        age: 30,
-        isSubscribed: true,
-        preferences: { theme: 'dark' }
-      };
+    test('should not detect bot with valid submission', () => {
+      const result = isLikelyBot('', Date.now() - 2000, 1500);
       
-      const sanitized = sanitizeFormData(formData);
-      
-      expect(sanitized.email).toBe('test@example.com');
-      expect(sanitized.age).toBe(30);
-      expect(sanitized.isSubscribed).toBe(true);
-      expect(sanitized.preferences).toEqual({ theme: 'dark' });
-    });
-    
-    test('should handle empty object', () => {
-      const sanitized = sanitizeFormData({});
-      
-      expect(sanitized).toEqual({});
-    });
-    
-    test('should handle null or undefined', () => {
-      expect(sanitizeFormData(null)).toEqual({});
-      expect(sanitizeFormData(undefined)).toEqual({});
+      expect(result.isBot).toBe(false);
+      expect(result.reason).toBeUndefined();
     });
   });
 }); 

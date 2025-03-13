@@ -1,15 +1,37 @@
-// Components
+/**
+ * React Waitlist - A customizable waitlist component for React applications
+ * Main entry point for client-side usage
+ */
+
+// Export the main WaitlistForm component
 export { default as WaitlistForm } from './components/WaitlistForm';
-export { default as ClientWaitlist } from './components/ClientWaitlist';
 
-// Types
-export * from './types';
+// Export hooks
+export { useWaitlistEvents } from './hooks/useWaitlistEvents';
 
-// Styles and Themes
-export { defaultTheme, tailwindDefaultTheme, materialUIDefaultTheme } from './styles';
+// Export types
+export type { 
+  Field, 
+  WaitlistProps, 
+  ThemeConfig, 
+  SecurityConfig, 
+  AnalyticsConfig, 
+  ResendMapping, 
+  WebhookConfig, 
+  A11yConfig, 
+  FrameworkConfig 
+} from './core/types';
 
-// Hooks
-export * from './hooks';
+// Export themes
+export { 
+  defaultTheme, 
+  tailwindDefaultTheme, 
+  materialUIDefaultTheme 
+} from './styles';
 
-// Utils
-export * from './utils'; 
+// Export event types
+export type { 
+  WaitlistEventType, 
+  WaitlistEventData, 
+  WaitlistEventHandler 
+} from './core/events'; 

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0-beta.1] - 2025-03-13
+
+### Added
+- New modular architecture with a centralized core module
+- Added `field_focus` event to track when users interact with form fields
+- Improved event system with a shared EventBus
+- New hooks for easier event handling
+- Better TypeScript types with centralized definitions
+
+### Changed
+- Major refactoring of the codebase for better maintainability
+- Removed `view` event in favor of more specific events
+- Updated event handling across all components
+- Improved consistency between client and server components
+- Enhanced webhook and analytics integrations with the new event system
+
+### Fixed
+- Fixed inconsistencies between client and server event handling
+- Improved type safety throughout the codebase
+- Better error handling for events
+
 ## [1.0.0-beta.1] - 2025-03-13
 
 ### Added

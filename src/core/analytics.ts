@@ -1,58 +1,42 @@
-import { AnalyticsConfig } from '../types';
+import { WaitlistEventType, WaitlistEventData } from './events';
+import { AnalyticsConfig } from './types';
 
 /**
- * Event types that can be tracked
- */
-export type EventType = 'view' | 'focus' | 'submit' | 'success' | 'error';
-
-/**
- * Event data for analytics
- */
-export interface EventData {
-  /** Event type */
-  event: EventType;
-  /** Additional properties */
-  properties?: Record<string, any>;
-}
-
-/**
- * Track an event with analytics providers
+ * Track an event with the configured analytics providers
  */
 export const trackEvent = (
   config: AnalyticsConfig | undefined,
-  eventData: EventData
+  event: { event: string; properties?: Record<string, any> }
 ): void => {
-  if (!config?.enabled) return;
-  
-  // Check if this event type should be tracked
-  if (
-    config.trackEvents &&
-    !config.trackEvents.includes(eventData.event)
-  ) {
+  if (!config || config.enabled === false) {
     return;
   }
-  
-  // Prepare event data
-  const { event, properties } = eventData;
-  
-  // Track with Google Analytics if enabled
-  if (config.integrations?.googleAnalytics) {
-    trackGoogleAnalytics(event, properties);
+
+  const { event: eventName, properties = {} } = event;
+
+  // Check if this event type should be tracked
+  if (config.trackEvents && !config.trackEvents.includes(eventName as any)) {
+    return;
   }
-  
-  // Track with Mixpanel if enabled
-  if (config.integrations?.mixpanel) {
-    trackMixpanel(config.integrations.mixpanel, event, properties);
+
+  // Track with Google Analytics
+  if (config.integrations?.googleAnalytics && typeof window !== 'undefined' && (window as any).gtag) {
+    (window as any).gtag('event', eventName, properties);
   }
-  
-  // Track with PostHog if enabled
-  if (config.integrations?.posthog) {
-    trackPostHog(config.integrations.posthog, event, properties);
+
+  // Track with Mixpanel
+  if (config.integrations?.mixpanel && typeof window !== 'undefined' && (window as any).mixpanel) {
+    (window as any).mixpanel.track(eventName, properties);
   }
-  
+
+  // Track with PostHog
+  if (config.integrations?.posthog && typeof window !== 'undefined' && (window as any).posthog) {
+    (window as any).posthog.capture(eventName, properties);
+  }
+
   // Log to console in development
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[Analytics] ${event}`, properties);
+    console.log(`[Analytics] ${eventName}`, properties);
   }
 };
 

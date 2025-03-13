@@ -1,4 +1,4 @@
-import { ThemeConfig } from '../types';
+import { ThemeConfig } from '../core/types';
 
 /**
  * Default theme configuration
@@ -558,72 +558,58 @@ export const materialUIDefaultTheme: ThemeConfig = {
 
 /**
  * Merge user theme with default theme
+ * This function is updated to handle both old and new theme types during the refactoring process
  */
-export const mergeTheme = (userTheme?: ThemeConfig): ThemeConfig => {
-  if (!userTheme) return defaultTheme;
+export function mergeTheme(userTheme?: any): any {
+  if (!userTheme) {
+    return defaultTheme;
+  }
 
-  // Deep merge for colors
-  const mergedColors = {
-    ...defaultTheme.colors,
-    ...userTheme.colors,
-    gray: {
-      ...defaultTheme.colors?.gray,
-      ...userTheme.colors?.gray,
-    },
-  };
-
-  // Deep merge for typography
-  const mergedTypography = {
-    ...defaultTheme.typography,
-    ...userTheme.typography,
-    fontSizes: {
-      ...defaultTheme.typography?.fontSizes,
-      ...userTheme.typography?.fontSizes,
-    },
-    fontWeights: {
-      ...defaultTheme.typography?.fontWeights,
-      ...userTheme.typography?.fontWeights,
-    },
-  };
-
-  // Deep merge for spacing
-  const mergedSpacing = {
-    ...defaultTheme.spacing,
-    ...userTheme.spacing,
-  };
-
-  // Deep merge for borders
-  const mergedBorders = {
-    ...defaultTheme.borders,
-    radius: {
-      ...defaultTheme.borders?.radius,
-      ...userTheme.borders?.radius,
-    },
-  };
-
-  // Deep merge for components
-  const mergedComponents = {
-    ...defaultTheme.components,
-    ...userTheme.components,
-  };
-
-  // Deep merge for animation
-  const mergedAnimation = {
-    ...defaultTheme.animation,
-    ...userTheme.animation,
-    effects: {
-      ...defaultTheme.animation?.effects,
-      ...userTheme.animation?.effects,
-    },
-  };
-
+  // Deep merge the themes
   return {
-    colors: mergedColors,
-    typography: mergedTypography,
-    spacing: mergedSpacing,
-    borders: mergedBorders,
-    components: mergedComponents,
-    animation: mergedAnimation,
-    framework: userTheme.framework || defaultTheme.framework,
+    colors: {
+      ...defaultTheme.colors,
+      ...userTheme.colors,
+      gray: {
+        ...defaultTheme.colors?.gray,
+        ...userTheme.colors?.gray,
+      },
+    },
+    typography: {
+      ...defaultTheme.typography,
+      ...userTheme.typography,
+      fontSizes: {
+        ...defaultTheme.typography?.fontSizes,
+        ...userTheme.typography?.fontSizes,
+      },
+      fontWeights: {
+        ...defaultTheme.typography?.fontWeights,
+        ...userTheme.typography?.fontWeights,
+      },
+    },
+    spacing: {
+      ...defaultTheme.spacing,
+      ...userTheme.spacing,
+    },
+    borders: {
+      ...defaultTheme.borders,
+      ...userTheme.borders,
+      radius: {
+        ...defaultTheme.borders?.radius,
+        ...userTheme.borders?.radius,
+      },
+    },
+    animation: {
+      ...defaultTheme.animation,
+      ...userTheme.animation,
+      effects: {
+        ...defaultTheme.animation?.effects,
+        ...userTheme.animation?.effects,
+      },
+    },
+    components: {
+      ...defaultTheme.components,
+      ...userTheme.components,
+    },
   };
-}; 
+} 
