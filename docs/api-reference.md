@@ -1,90 +1,124 @@
 # API Reference
 
+This document provides a comprehensive reference for all components, props, and utilities available in the React Waitlist package.
+
 ## Components
 
-### `<WaitlistForm>`
+### WaitlistForm
 
-The main component for client-side usage.
+The main component for creating waitlist forms.
 
 ```jsx
 import { WaitlistForm } from 'react-waitlist';
 
 <WaitlistForm 
-  audienceId="your-audience-id"
-  proxyEndpoint="/api/resend-proxy"
+  resendAudienceId="your_audience_id"
+  resendProxyEndpoint="/api/resend-proxy"
+  title="Join Our Waitlist"
+  description="Be the first to know when we launch."
 />
 ```
 
 #### Props
 
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `audienceId` | `string` | Yes | - | The Resend audience ID to add contacts to |
-| `proxyEndpoint` | `string` | No* | - | The endpoint for the proxy API (*required for client-side usage) |
-| `apiKey` | `string` | No* | - | The Resend API key (*only use in server components) |
-| `title` | `string` | No | "Join our waitlist" | The title of the waitlist form |
-| `description` | `string` | No | "Be the first to know when we launch" | The description of the waitlist form |
-| `submitText` | `string` | No | "Join waitlist" | The text for the submit button |
-| `successTitle` | `string` | No | "You're on the list!" | The title shown after successful submission |
-| `successDescription` | `string` | No | "Thank you for joining our waitlist. We'll keep you updated." | The description shown after successful submission |
-| `fields` | `Field[]` | No | `[{ name: 'email', type: 'email', label: 'Email', required: true, placeholder: 'your@email.com' }]` | The fields to collect |
-| `theme` | `ThemeConfig` | No | - | Theme configuration |
-| `a11y` | `A11yConfig` | No | - | Accessibility configuration |
-| `security` | `SecurityConfig` | No | `{ enableHoneypot: true, checkSubmissionTime: true }` | Security configuration |
-| `analytics` | `AnalyticsConfig` | No | - | Analytics configuration |
-| `resendMapping` | `ResendMapping` | No | - | Mapping of fields to Resend API fields |
-| `onSuccess` | `(data: any) => void` | No | - | Callback when submission is successful |
-| `onError` | `(error: Error) => void` | No | - | Callback when submission fails |
-| `className` | `string` | No | - | Custom CSS class name |
-| `style` | `React.CSSProperties` | No | - | Custom inline styles |
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `resendAudienceId` | `string` | No | The ID of the Resend audience to add contacts to |
+| `resendProxyEndpoint` | `string` | No | The URL of the proxy endpoint for Resend API calls |
+| `title` | `string` | No | The title of the waitlist form |
+| `description` | `string` | No | The description text below the title |
+| `submitText` | `string` | No | The text for the submit button |
+| `successTitle` | `string` | No | The title shown after successful submission |
+| `successDescription` | `string` | No | The description shown after successful submission |
+| `fields` | `Field[]` | No | Array of field definitions (see Field type below) |
+| `theme` | `ThemeConfig` | No | Theme configuration for styling the form |
+| `className` | `string` | No | Additional CSS class for the form container |
+| `style` | `React.CSSProperties` | No | Inline styles for the form container |
+| `security` | `SecurityConfig` | No | Security configuration options |
+| `analytics` | `AnalyticsConfig` | No | Analytics configuration options |
+| `resendMapping` | `ResendMapping` | No | Mapping of form fields to Resend contact fields |
+| `webhooks` | `WebhookConfig[]` | No | Array of webhook configurations |
+| `webhookProxyEndpoint` | `string` | No | The URL of the proxy endpoint for webhook calls |
+| `recaptchaProxyEndpoint` | `string` | No | The URL of the proxy endpoint for reCAPTCHA verification |
+| `onView` | `(data: ViewEventData) => void` | No | Callback when the form is viewed |
+| `onSubmit` | `(data: SubmitEventData) => void` | No | Callback when the form is submitted |
+| `onSuccess` | `(data: SuccessEventData) => void` | No | Callback when submission is successful |
+| `onError` | `(data: ErrorEventData) => void` | No | Callback when an error occurs |
 
-### `<ServerWaitlist>`
+### Server Components
 
-The server-side component for frameworks with SSR support.
+For server-side rendering (SSR) in frameworks like Next.js App Router, use the `ServerWaitlist` and `ClientWaitlist` components:
 
 ```jsx
-import { ServerWaitlist } from 'react-waitlist/server';
+import { ServerWaitlist, ClientWaitlist } from 'react-waitlist/server';
 
+// In a server component:
 <ServerWaitlist 
   apiKey={process.env.RESEND_API_KEY}
-  audienceId="your-audience-id"
+  resendAudienceId="your_audience_id"
+  title="Join Our Waitlist"
 />
+
+// In a client component or alongside the ServerWaitlist:
+<ClientWaitlist />
 ```
 
-#### Props
+#### ServerWaitlist Props
 
-Same as `<WaitlistForm>` except:
-- `apiKey` is required
-- `proxyEndpoint` is not available
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `apiKey` | `string` | Yes | The Resend API key (kept secure on the server) |
+| `resendAudienceId` | `string` | Yes | The ID of the Resend audience to add contacts to |
+| `recaptchaSiteKey` | `string` | No | The reCAPTCHA site key for bot protection |
+| `title` | `string` | No | The title of the waitlist form |
+| `description` | `string` | No | The description text below the title |
+| `submitText` | `string` | No | The text for the submit button |
+| `successTitle` | `string` | No | The title shown after successful submission |
+| `successDescription` | `string` | No | The description shown after successful submission |
+| `fields` | `Field[]` | No | Array of field definitions (see Field type below) |
+| `theme` | `ThemeConfig` | No | Theme configuration for styling the form |
+| `className` | `string` | No | Additional CSS class for the form container |
+| `style` | `React.CSSProperties` | No | Inline styles for the form container |
+| `security` | `SecurityConfig` | No | Security configuration options |
+| `analytics` | `AnalyticsConfig` | No | Analytics configuration options |
+| `resendMapping` | `ResendMapping` | No | Mapping of form fields to Resend contact fields |
+| `webhooks` | `WebhookConfig[]` | No | Array of webhook configurations |
+
+#### ClientWaitlist Component
+
+The `ClientWaitlist` component is used in conjunction with `ServerWaitlist` to hydrate the server-rendered placeholder with the interactive form.
+
+```jsx
+import { ClientWaitlist } from 'react-waitlist/server';
+
+// Use alongside ServerWaitlist
+<ClientWaitlist />
+```
+
+This component takes no props as it automatically finds and hydrates the placeholder rendered by `ServerWaitlist`.
 
 ## Types
 
-### `Field`
+### Field
+
+Defines a form field.
 
 ```typescript
-type FieldType = 'text' | 'email' | 'select' | 'checkbox';
-
 interface Field {
-  /** Unique name for the field */
   name: string;
-  /** Type of field */
-  type: FieldType;
-  /** Label to display */
+  type: 'text' | 'email' | 'select' | 'checkbox';
   label: string;
-  /** Whether the field is required */
   required: boolean;
-  /** Placeholder text */
   placeholder?: string;
-  /** Default value */
   defaultValue?: string | boolean;
-  /** Options for select fields */
   options?: string[];
-  /** Whether this field should be sent as metadata to Resend */
   metadata?: boolean;
 }
 ```
 
-### `ThemeConfig`
+### ThemeConfig
+
+Configuration for styling the form.
 
 ```typescript
 interface ThemeConfig {
@@ -108,11 +142,6 @@ interface ThemeConfig {
       lg?: string;
       xl?: string;
     };
-    fontWeights?: {
-      regular?: number;
-      medium?: number;
-      bold?: number;
-    };
   };
   spacing?: {
     xs?: string;
@@ -121,185 +150,282 @@ interface ThemeConfig {
     lg?: string;
     xl?: string;
   };
-  borders?: {
-    radius?: {
-      sm?: string;
-      md?: string;
-      lg?: string;
-      full?: string;
-    };
+  borderRadius?: {
+    sm?: string;
+    md?: string;
+    lg?: string;
+    full?: string;
   };
+  animation?: AnimationConfig;
 }
 ```
 
-### `A11yConfig`
+### SecurityConfig
 
-```typescript
-interface A11yConfig {
-  /** Whether to announce status changes to screen readers */
-  announceStatus?: boolean;
-  /** Whether to use high contrast mode */
-  highContrast?: boolean;
-  /** Whether to respect reduced motion preferences */
-  reducedMotion?: 'auto' | boolean;
-  /** Custom ARIA labels */
-  ariaLabels?: {
-    form?: string;
-    emailField?: string;
-    submitButton?: string;
-    successMessage?: string;
-    errorMessage?: string;
-    [key: string]: string | undefined;
-  };
-}
-```
-
-### `SecurityConfig`
+Configuration for security features.
 
 ```typescript
 interface SecurityConfig {
-  /** Whether to enable reCAPTCHA */
-  enableReCaptcha?: boolean;
-  /** reCAPTCHA site key */
-  reCaptchaSiteKey?: string;
-  /** Whether to enable honeypot */
   enableHoneypot?: boolean;
-  /** Whether to check for submission time (bot detection) */
   checkSubmissionTime?: boolean;
+  minSubmissionTimeSec?: number;
+  enableReCaptcha?: boolean;
+  reCaptchaSiteKey?: string;
+  reCaptchaMinScore?: number;
 }
 ```
 
-### `AnalyticsConfig`
+### AnalyticsConfig
+
+Configuration for analytics tracking.
 
 ```typescript
 interface AnalyticsConfig {
-  /** Whether to enable analytics */
-  enabled?: boolean;
-  /** Events to track */
-  trackEvents?: ('view' | 'focus' | 'submit' | 'success' | 'error')[];
-  /** Integration with analytics tools */
-  integrations?: {
-    googleAnalytics?: boolean;
-    mixpanel?: string;
-    posthog?: string;
-    [key: string]: boolean | string | undefined;
-  };
+  trackView?: boolean;
+  trackSubmit?: boolean;
+  trackSuccess?: boolean;
+  trackError?: boolean;
+  customData?: Record<string, any>;
 }
 ```
 
-### `ResendMapping`
+### ResendMapping
+
+Mapping of form fields to Resend contact fields.
 
 ```typescript
 interface ResendMapping {
-  /** Field to use for email */
   email?: string;
-  /** Field to use for first name */
   firstName?: string;
-  /** Field to use for last name */
   lastName?: string;
-  /** Fields to send as metadata */
   metadata?: string[];
 }
 ```
 
+### WebhookConfig
+
+Configuration for a webhook.
+
+```typescript
+interface WebhookConfig {
+  url: string;
+  events: ('view' | 'submit' | 'success' | 'error')[];
+  includeAllFields?: boolean;
+  includeFields?: string[];
+  excludeFields?: string[];
+  customHeaders?: Record<string, string>;
+  customData?: Record<string, any>;
+}
+```
+
+## Server Utilities
+
+### createResendProxy
+
+Creates a proxy endpoint for Resend API calls.
+
+```javascript
+import { createResendProxy } from 'react-waitlist/server';
+
+export default createResendProxy({
+  apiKey: process.env.RESEND_API_KEY,
+  allowedAudiences: ['your_audience_id'],
+  rateLimit: {
+    max: 10,
+    windowSec: 60,
+  },
+});
+```
+
+#### Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `apiKey` | `string` | Yes | The Resend API key |
+| `allowedAudiences` | `string[]` | No | Array of allowed audience IDs |
+| `rateLimit` | `{ max: number, windowSec: number }` | No | Rate limiting configuration |
+| `cors` | `{ origin: string | string[], methods: string[] }` | No | CORS configuration |
+
+### createWebhookProxy
+
+Creates a proxy endpoint for webhook calls.
+
+```javascript
+import { createWebhookProxy } from 'react-waitlist/server';
+
+export default createWebhookProxy({
+  allowedWebhooks: ['https://your-webhook-endpoint.com'],
+  secretKey: process.env.WEBHOOK_SECRET_KEY,
+});
+```
+
+#### Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `allowedWebhooks` | `string[]` | No | Array of allowed webhook URLs |
+| `secretKey` | `string` | No | Secret key for signing webhook requests |
+| `rateLimit` | `{ max: number, windowSec: number }` | No | Rate limiting configuration |
+| `cors` | `{ origin: string | string[], methods: string[] }` | No | CORS configuration |
+
+### createRecaptchaProxy
+
+Creates a proxy endpoint for reCAPTCHA verification.
+
+```javascript
+import { createRecaptchaProxy } from 'react-waitlist/server';
+
+export default createRecaptchaProxy({
+  secretKey: process.env.RECAPTCHA_SECRET_KEY,
+  minScore: 0.5,
+});
+```
+
+#### Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `secretKey` | `string` | Yes | The reCAPTCHA secret key |
+| `minScore` | `number` | No | Minimum score for verification (0.0 to 1.0) |
+| `allowedActions` | `string[]` | No | Array of allowed reCAPTCHA actions |
+| `rateLimit` | `{ max: number, windowSec: number }` | No | Rate limiting configuration |
+| `cors` | `{ origin: string | string[], methods: string[] }` | No | CORS configuration |
+
 ## Hooks
 
-### `useWaitlistForm`
+### useWaitlistForm
 
-```typescript
-function useWaitlistForm(options: UseWaitlistFormOptions): UseWaitlistFormReturn;
+Hook for creating custom waitlist forms.
 
-interface UseWaitlistFormOptions {
-  /** Fields to collect */
-  fields: Field[];
-  /** Security configuration */
-  security?: SecurityConfig;
-  /** Mapping to Resend API fields */
-  resendMapping?: ResendMapping;
-  /** Audience ID from Resend */
-  audienceId: string;
-  /** Endpoint for proxy API (for client-side usage) */
-  proxyEndpoint?: string;
-  /** Resend API key (only use in server components or with proxy) */
-  apiKey?: string;
-  /** Analytics configuration */
-  analytics?: AnalyticsConfig;
-  /** Callback when submission is successful */
-  onSuccess?: (data: any) => void;
-  /** Callback when submission fails */
-  onError?: (error: Error) => void;
-}
+```jsx
+import { useWaitlistForm } from 'react-waitlist/hooks';
 
-interface UseWaitlistFormReturn {
-  /** Current form state */
-  formState: 'idle' | 'submitting' | 'success' | 'error';
-  /** Form values */
-  formValues: Record<string, string | boolean>;
-  /** Validation results */
-  validationResults: Record<string, { valid: boolean; message?: string }>;
-  /** Error message */
-  errorMessage: string;
-  /** Honeypot field name */
-  honeypotFieldName: string;
-  /** Handle input change */
-  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  /** Handle form submission */
-  handleSubmit: (e: React.FormEvent) => Promise<void>;
-  /** Reset form */
-  resetForm: () => void;
+function CustomWaitlistForm() {
+  const {
+    formState,
+    formValues,
+    validationResults,
+    errorMessage,
+    honeypotFieldName,
+    handleChange,
+    handleSubmit,
+    resetForm,
+  } = useWaitlistForm({
+    fields: [
+      { name: 'email', type: 'email', label: 'Email', required: true },
+    ],
+    resendAudienceId: 'your_audience_id',
+    resendProxyEndpoint: '/api/resend-proxy',
+    onSuccess: (data) => {
+      console.log('Success:', data);
+    },
+  });
+
+  // Custom rendering logic...
 }
 ```
 
-### `useResendAudience`
+### useResendAudience
 
-```typescript
-function useResendAudience(options: UseResendAudienceOptions): UseResendAudienceReturn;
+Hook for interacting with Resend audiences.
 
-interface UseResendAudienceOptions {
-  /** Resend API key */
-  apiKey?: string;
-  /** Audience ID */
-  audienceId: string;
-  /** Proxy endpoint for client-side usage */
-  proxyEndpoint?: string;
-}
+```jsx
+import { useResendAudience } from 'react-waitlist/hooks';
 
-interface UseResendAudienceReturn {
-  /** Add a contact to the audience */
-  addContact: (contact: ResendContact) => Promise<ResendResponse>;
-  /** Update a contact in the audience */
-  updateContact: (id: string, contact: Partial<ResendContact>) => Promise<ResendResponse>;
-  /** Remove a contact from the audience */
-  removeContact: (id: string) => Promise<void>;
-  /** Get a contact from the audience */
-  getContact: (id: string) => Promise<ResendResponse>;
-  /** List contacts in the audience */
-  listContacts: () => Promise<ResendResponse[]>;
-  /** Loading state */
-  loading: boolean;
-  /** Error state */
-  error: Error | null;
-}
-```
+function Component() {
+  const { addContact, loading, error } = useResendAudience({
+    audienceId: 'your_audience_id',
+    proxyEndpoint: '/api/resend-proxy',
+  });
 
-## Utilities
-
-### `createResendProxy`
-
-```typescript
-function createResendProxy(config: ResendProxyConfig): RequestHandler;
-
-interface ResendProxyConfig {
-  /** Resend API key */
-  apiKey: string;
-  /** Allowed audience IDs (for security) */
-  allowedAudiences?: string[];
-  /** Rate limiting configuration */
-  rateLimit?: {
-    /** Maximum number of requests per window */
-    max: number;
-    /** Time window in seconds */
-    windowSec: number;
+  const handleAddContact = async () => {
+    try {
+      await addContact({
+        email: 'user@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        metadata: {
+          role: 'Developer',
+        },
+      });
+      console.log('Contact added successfully');
+    } catch (error) {
+      console.error('Error adding contact:', error);
+    }
   };
+
+  // Rendering logic...
+}
+```
+
+### useReCaptcha
+
+Hook for integrating with reCAPTCHA.
+
+```jsx
+import { useReCaptcha } from 'react-waitlist/hooks';
+
+function Component() {
+  const { executeReCaptcha, isLoaded, error } = useReCaptcha({
+    siteKey: 'your_recaptcha_site_key',
+    proxyEndpoint: '/api/recaptcha-proxy',
+  });
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    
+    try {
+      const token = await executeReCaptcha('submit_form');
+      console.log('reCAPTCHA token:', token);
+      // Use the token for form submission
+    } catch (error) {
+      console.error('reCAPTCHA error:', error);
+    }
+  };
+
+  // Rendering logic...
+}
+```
+
+## Event Types
+
+### ViewEventData
+
+```typescript
+interface ViewEventData {
+  timestamp: number;
+  customData?: Record<string, any>;
+}
+```
+
+### SubmitEventData
+
+```typescript
+interface SubmitEventData {
+  formData: Record<string, any>;
+  timestamp: number;
+  customData?: Record<string, any>;
+}
+```
+
+### SuccessEventData
+
+```typescript
+interface SuccessEventData {
+  formData: Record<string, any>;
+  response: any;
+  timestamp: number;
+  customData?: Record<string, any>;
+}
+```
+
+### ErrorEventData
+
+```typescript
+interface ErrorEventData {
+  formData?: Record<string, any>;
+  error: Error;
+  timestamp: number;
+  customData?: Record<string, any>;
 }
 ``` 

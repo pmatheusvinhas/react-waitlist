@@ -38,21 +38,24 @@ React Waitlist is designed to be flexible and secure, offering multiple integrat
 
 ### 1. Server-Side Integration (Most Secure)
 
-For frameworks with server-side rendering support (Next.js App Router, Remix, etc.), use the `ServerWaitlist` component to keep API keys secure on the server:
+For frameworks with server-side rendering support (Next.js App Router, Remix, etc.), use the `ServerWaitlist` and `ClientWaitlist` components to keep API keys secure on the server:
 
 ```jsx
 // app/page.js (Next.js App Router)
-import { ServerWaitlist } from 'react-waitlist/server';
+import { ServerWaitlist, ClientWaitlist } from 'react-waitlist/server';
 
 export default function Home() {
   return (
     <main>
       <h1>My Awesome Product</h1>
+      {/* Server Component - Renders a placeholder */}
       <ServerWaitlist 
         apiKey={process.env.RESEND_API_KEY} // Securely used on the server
         resendAudienceId="your_audience_id"
         title="Join Our Waitlist"
       />
+      {/* Client Component - Hydrates the placeholder */}
+      <ClientWaitlist />
     </main>
   );
 }
@@ -206,6 +209,24 @@ function App() {
   );
 }
 ```
+
+## Server-Side Rendering (SSR) Architecture
+
+When using the `ServerWaitlist` and `ClientWaitlist` components with frameworks like Next.js App Router, the following architecture is used:
+
+1. **ServerWaitlist (Server Component)**: 
+   - Runs on the server only
+   - Securely handles API keys and sensitive configuration
+   - Renders a placeholder with serialized props
+   - No React hooks or client-side code
+
+2. **ClientWaitlist (Client Component)**:
+   - Has the `'use client'` directive
+   - Hydrates the placeholder rendered by ServerWaitlist
+   - Handles all client-side interactivity
+   - Uses React hooks for state management
+
+This architecture ensures that sensitive information like API keys stays on the server while providing a seamless user experience with client-side interactivity.
 
 ## Backend Setup (Optional but Recommended)
 
@@ -402,24 +423,26 @@ graph TD
     C -->|Server Component| D[ServerWaitlist]
     D --> E[Direct Resend API Access]
     E --> F[Resend API]
+    D --> G[ClientWaitlist]
+    G --> H[WaitlistForm]
     
-    C -->|Client with Security Utils| G[WaitlistForm]
-    G --> H[Security Utilities]
-    H --> I[Proxy Endpoints]
-    I --> F
+    C -->|Client with Security Utils| I[WaitlistForm]
+    I --> J[Security Utilities]
+    J --> K[Proxy Endpoints]
+    K --> F
     
-    C -->|Custom Integration| J[WaitlistForm with Callbacks]
-    J --> K[Your Custom Backend]
+    C -->|Custom Integration| L[WaitlistForm with Callbacks]
+    L --> M[Your Custom Backend]
     
-    B --> L{Security Features}
-    L --> M[Honeypot]
-    L --> N[Submission Timing]
-    L --> O[reCAPTCHA]
+    B --> N{Security Features}
+    N --> O[Honeypot]
+    N --> P[Submission Timing]
+    N --> Q[reCAPTCHA]
     
-    B --> P{Additional Features}
-    P --> Q[Webhooks]
-    P --> R[Analytics]
-    P --> S[Accessibility]
+    B --> R{Additional Features}
+    R --> S[Webhooks]
+    R --> T[Analytics]
+    R --> U[Accessibility]
 ```
 
 The security utilities (`createResendProxy`, `createWebhookProxy`, `createRecaptchaProxy`) are included as part of this package, not external dependencies. They help you create secure endpoints that protect your API keys and credentials while maintaining a seamless developer experience.

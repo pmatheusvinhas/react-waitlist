@@ -1,6 +1,6 @@
-# Getting Started with React Waitlist
+# Getting Started
 
-React Waitlist is a customizable waitlist component for React that integrates with Resend audiences. It allows you to easily collect and manage waitlist signups for your product or service.
+This guide will help you get started with React Waitlist, a customizable waitlist component for React that integrates with Resend audiences.
 
 ## Installation
 
@@ -20,13 +20,104 @@ npm install react-waitlist/server
 yarn add react-waitlist/server
 ```
 
-## Basic Usage
+## Integration Options
 
-React Waitlist is highly flexible and can be integrated with various systems. Here are some common usage patterns:
+React Waitlist offers multiple integration options to fit your application architecture:
 
-### Simple Usage with Callbacks
+### 1. Server-Side Rendering (SSR) Integration
 
-The simplest way to use React Waitlist is with event callbacks to integrate with your own systems:
+For frameworks with server-side rendering support (Next.js App Router, Remix, etc.), use the `ServerWaitlist` and `ClientWaitlist` components to keep API keys secure on the server:
+
+```jsx
+// app/page.js (Next.js App Router)
+import { ServerWaitlist, ClientWaitlist } from 'react-waitlist/server';
+
+export default function Home() {
+  return (
+    <main>
+      <h1>My Awesome Product</h1>
+      {/* Server Component - Renders a placeholder */}
+      <ServerWaitlist 
+        apiKey={process.env.RESEND_API_KEY} // Securely used on the server
+        resendAudienceId="your_audience_id"
+        title="Join Our Waitlist"
+        description="Be the first to know when we launch."
+        submitText="Join Now"
+        fields={[
+          {
+            name: 'email',
+            type: 'email',
+            label: 'Email',
+            required: true,
+            placeholder: 'your@email.com',
+          },
+          {
+            name: 'firstName',
+            type: 'text',
+            label: 'First Name',
+            required: false,
+            placeholder: 'John',
+          }
+        ]}
+        theme={{
+          colors: {
+            primary: '#0070f3',
+          }
+        }}
+      />
+      {/* Client Component - Hydrates the placeholder */}
+      <ClientWaitlist />
+    </main>
+  );
+}
+```
+
+#### How Server-Side Rendering Works
+
+1. The `ServerWaitlist` component runs on the server and:
+   - Securely handles API keys and sensitive configuration
+   - Renders a placeholder with serialized props
+   - Does not use any React hooks or client-side code
+
+2. The `ClientWaitlist` component runs on the client and:
+   - Has the `'use client'` directive
+   - Finds the placeholder rendered by ServerWaitlist
+   - Extracts the serialized props
+   - Hydrates the form with the actual interactive component
+   - Handles all client-side interactivity
+
+This approach ensures that sensitive information like API keys stays on the server while providing a seamless user experience with client-side interactivity.
+
+### 2. Client-Side with Security Utilities
+
+For client-side React applications, use the included security utilities to create proxy endpoints that protect your API keys:
+
+```jsx
+// Frontend component
+import { WaitlistForm } from 'react-waitlist';
+
+function App() {
+  return (
+    <WaitlistForm 
+      resendAudienceId="your_audience_id"
+      resendProxyEndpoint="/api/resend-proxy"
+    />
+  );
+}
+
+// Backend proxy (part of this package)
+// api/resend-proxy.js
+import { createResendProxy } from 'react-waitlist/server';
+
+export default createResendProxy({
+  apiKey: process.env.RESEND_API_KEY,
+  allowedAudiences: ['your_audience_id'],
+});
+```
+
+### 3. Custom Integration with Your Own Backend
+
+Use event callbacks to integrate with your existing backend systems:
 
 ```jsx
 import { WaitlistForm } from 'react-waitlist';
@@ -34,8 +125,33 @@ import { WaitlistForm } from 'react-waitlist';
 function App() {
   return (
     <WaitlistForm 
-      title="Join Our Waitlist"
-      description="Be the first to know when we launch."
+      onSuccess={({ formData }) => {
+        // Handle successful submission with your own backend
+        fetch('https://your-api.com/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      }}
+    />
+  );
+}
+```
+
+## Basic Usage
+
+### Frontend (React)
+
+React Waitlist can be integrated with various systems through different methods:
+
+#### Simple Usage with Custom Handlers
+
+```jsx
+import { WaitlistForm } from 'react-waitlist';
+
+function App() {
+  return (
+    <WaitlistForm 
       onSuccess={({ formData }) => {
         // Handle successful submission
         console.log('Form submitted successfully:', formData);
@@ -54,9 +170,7 @@ function App() {
 }
 ```
 
-### Integration with Resend Audiences
-
-For integration with Resend audiences, you'll need to set up a proxy endpoint to protect your API key:
+#### With Resend Integration
 
 ```jsx
 import { WaitlistForm } from 'react-waitlist';
@@ -66,16 +180,12 @@ function App() {
     <WaitlistForm 
       resendAudienceId="your_audience_id"
       resendProxyEndpoint="https://your-api.com/api/resend-proxy"
-      title="Join Our Waitlist"
-      description="Be the first to know when we launch."
     />
   );
 }
 ```
 
-### Using Webhooks for External Integrations
-
-You can use webhooks to send form data to external systems:
+#### With Webhooks for External Systems
 
 ```jsx
 import { WaitlistForm } from 'react-waitlist';
@@ -83,8 +193,6 @@ import { WaitlistForm } from 'react-waitlist';
 function App() {
   return (
     <WaitlistForm 
-      title="Join Our Waitlist"
-      description="Be the first to know when we launch."
       webhooks={[
         {
           url: "https://your-api.com/webhook",
@@ -98,9 +206,7 @@ function App() {
 }
 ```
 
-### Combining Multiple Integration Methods
-
-You can combine different integration methods for maximum flexibility:
+#### Combining Multiple Integration Methods
 
 ```jsx
 import { WaitlistForm } from 'react-waitlist';
@@ -126,9 +232,6 @@ function App() {
         }
       ]}
       webhookProxyEndpoint="https://your-api.com/api/webhook-proxy"
-      
-      title="Join Our Waitlist"
-      description="Be the first to know when we launch."
     />
   );
 }
@@ -136,7 +239,7 @@ function App() {
 
 ## Backend Setup (Optional but Recommended)
 
-For security reasons, it's recommended to use proxy endpoints to protect your API keys and credentials. The implementation depends on your backend technology.
+For security reasons, it's recommended to use proxy endpoints to protect your API keys and credentials.
 
 ### Express.js Backend
 
@@ -152,11 +255,7 @@ app.use(cors());
 
 app.post('/api/resend-proxy', createResendProxy({
   apiKey: process.env.RESEND_API_KEY,
-  allowedAudiences: ['your_audience_id'], // Optional: restrict to specific audiences
-  rateLimit: { // Optional: rate limiting
-    max: 10, // Maximum 10 requests
-    windowSec: 60, // Per minute
-  },
+  allowedAudiences: ['your_audience_id'],
 }));
 
 app.listen(3001, () => {
@@ -164,86 +263,26 @@ app.listen(3001, () => {
 });
 ```
 
-### AWS Lambda Function
-
-```javascript
-// lambda-function.js
-const { createResendProxy } = require('react-waitlist/server');
-
-const proxyHandler = createResendProxy({
-  apiKey: process.env.RESEND_API_KEY,
-  allowedAudiences: ['your_audience_id'],
-});
-
-exports.handler = async (event) => {
-  const req = {
-    body: JSON.parse(event.body),
-    headers: event.headers,
-  };
-  
-  let statusCode = 200;
-  let responseBody = {};
-  
-  const res = {
-    status: (code) => {
-      statusCode = code;
-      return {
-        json: (data) => {
-          responseBody = data;
-        }
-      };
-    }
-  };
-  
-  await proxyHandler(req, res);
-  
-  return {
-    statusCode,
-    body: JSON.stringify(responseBody),
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  };
-};
-```
-
-### Firebase Cloud Function
-
-```javascript
-// functions/index.js
-const functions = require('firebase-functions');
-const { createResendProxy } = require('react-waitlist/server');
-
-exports.resendProxy = functions.https.onRequest(async (req, res) => {
-  const proxyHandler = createResendProxy({
-    apiKey: process.env.RESEND_API_KEY,
-    allowedAudiences: ['your_audience_id'],
-  });
-  
-  await proxyHandler(req, res);
-});
-```
-
 ### Next.js API Routes
 
-```jsx
+```javascript
 // pages/api/resend-proxy.js (Next.js Pages Router)
 import { createResendProxy } from 'react-waitlist/server';
 
 export default createResendProxy({
   apiKey: process.env.RESEND_API_KEY,
-  allowedAudiences: ['your-audience-id'],
+  allowedAudiences: ['your_audience_id'],
 });
 ```
 
-```jsx
+```javascript
 // app/api/resend-proxy/route.js (Next.js App Router)
 import { NextResponse } from 'next/server';
 import { createResendProxy } from 'react-waitlist/server';
 
 const proxyHandler = createResendProxy({
   apiKey: process.env.RESEND_API_KEY,
-  allowedAudiences: ['your-audience-id'],
+  allowedAudiences: ['your_audience_id'],
 });
 
 export async function POST(req) {
@@ -256,106 +295,6 @@ export async function POST(req) {
 }
 ```
 
-## Framework-Specific Examples
-
-### Create React App (CRA)
-
-```jsx
-// src/App.js
-import React from 'react';
-import { WaitlistForm } from 'react-waitlist';
-import './App.css';
-
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <h1>My Awesome Product</h1>
-        <WaitlistForm 
-          resendAudienceId="your_audience_id"
-          resendProxyEndpoint="https://your-api.com/api/resend-proxy"
-          title="Join Our Waitlist"
-          description="Be the first to know when we launch."
-        />
-      </header>
-    </div>
-  );
-}
-
-export default App;
-```
-
-### Vite
-
-```jsx
-// src/App.jsx
-import React from 'react';
-import { WaitlistForm } from 'react-waitlist';
-import './App.css';
-
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <h1>My Awesome Product</h1>
-        <WaitlistForm 
-          resendAudienceId="your_audience_id"
-          resendProxyEndpoint="https://your-api.com/api/resend-proxy"
-          title="Join Our Waitlist"
-          description="Be the first to know when we launch."
-        />
-      </header>
-    </div>
-  );
-}
-
-export default App;
-```
-
-### Next.js (Client Component)
-
-```jsx
-// app/page.js
-'use client';
-
-import { WaitlistForm } from 'react-waitlist';
-
-export default function Home() {
-  return (
-    <main>
-      <h1>My Awesome Product</h1>
-      <WaitlistForm 
-        resendAudienceId="your_audience_id"
-        resendProxyEndpoint="/api/resend-proxy"
-        title="Join Our Waitlist"
-        description="Be the first to know when we launch."
-      />
-    </main>
-  );
-}
-```
-
-### Next.js (Server Component)
-
-```jsx
-// app/page.js
-import { ServerWaitlist } from 'react-waitlist/server';
-
-export default function Home() {
-  return (
-    <main>
-      <h1>My Awesome Product</h1>
-      <ServerWaitlist 
-        apiKey={process.env.RESEND_API_KEY}
-        resendAudienceId="your_audience_id"
-        title="Join Our Waitlist"
-        description="Be the first to know when we launch."
-      />
-    </main>
-  );
-}
-```
-
 ## Customization
 
 React Waitlist is highly customizable. Here are some examples:
@@ -364,70 +303,36 @@ React Waitlist is highly customizable. Here are some examples:
 
 ```jsx
 <WaitlistForm 
-  resendAudienceId="your-audience-id"
-  resendProxyEndpoint="https://your-api.com/api/resend-proxy"
   fields={[
-    {
-      name: 'email',
-      type: 'email',
-      label: 'Email',
-      required: true,
-      placeholder: 'your@email.com',
-    },
-    {
-      name: 'firstName',
-      type: 'text',
-      label: 'First Name',
-      required: false,
-      placeholder: 'John',
-    },
-    {
-      name: 'lastName',
-      type: 'text',
-      label: 'Last Name',
-      required: false,
-      placeholder: 'Doe',
-    },
-    {
-      name: 'role',
-      type: 'select',
-      label: 'Role',
+    { name: 'email', type: 'email', required: true, label: 'Email' },
+    { name: 'firstName', type: 'text', required: false, label: 'First Name' },
+    { name: 'company', type: 'text', required: false, label: 'Company' },
+    { 
+      name: 'role', 
+      type: 'select', 
       options: ['Developer', 'Designer', 'Product Manager', 'Other'],
-      required: false,
-    },
-    {
-      name: 'consent',
-      type: 'checkbox',
-      label: 'I agree to receive updates about the product',
-      required: true,
-    },
+      label: 'Role',
+      metadata: true
+    }
   ]}
-  resendMapping={{
-    email: 'email',
-    firstName: 'firstName',
-    lastName: 'lastName',
-    metadata: ['role'], // Fields to send as metadata
-  }}
 />
 ```
 
-### Custom Theme
+### Custom Styling
 
 ```jsx
 <WaitlistForm 
-  resendAudienceId="your-audience-id"
-  resendProxyEndpoint="https://your-api.com/api/resend-proxy"
   theme={{
     colors: {
-      primary: '#3182CE', // Blue
-      secondary: '#805AD5', // Purple
-      background: '#FFFFFF', // White
-      text: '#1A202C', // Dark gray
-      error: '#E53E3E', // Red
-      success: '#38A169', // Green
+      primary: '#3182CE',
+      secondary: '#805AD5',
+      background: '#F7FAFC',
+      text: '#2D3748',
+      error: '#E53E3E',
+      success: '#38A169',
     },
     typography: {
-      fontFamily: "'Inter', sans-serif",
+      fontFamily: 'Inter, system-ui, sans-serif',
       fontSizes: {
         xs: '0.75rem',
         sm: '0.875rem',
@@ -443,60 +348,36 @@ React Waitlist is highly customizable. Here are some examples:
       lg: '1.5rem',
       xl: '2rem',
     },
-    borders: {
-      radius: {
-        sm: '0.125rem',
-        md: '0.25rem',
-        lg: '0.5rem',
-        full: '9999px',
-      },
+    borderRadius: {
+      sm: '0.125rem',
+      md: '0.25rem',
+      lg: '0.5rem',
+      full: '9999px',
     },
   }}
 />
 ```
 
-## Advanced Usage
-
-### Using Hooks
-
-For more control, you can use the hooks directly:
+### Custom Content
 
 ```jsx
-import { useWaitlistForm } from 'react-waitlist/hooks';
-
-function CustomWaitlistForm() {
-  const {
-    formState,
-    formValues,
-    validationResults,
-    errorMessage,
-    honeypotFieldName,
-    handleChange,
-    handleSubmit,
-    resetForm,
-  } = useWaitlistForm({
-    fields: [
-      { name: 'email', type: 'email', label: 'Email', required: true },
-    ],
-    resendAudienceId: 'your-audience-id',
-    resendProxyEndpoint: 'https://your-api.com/api/resend-proxy',
-    onSuccess: (data) => {
-      console.log('Success:', data);
-    },
-    onError: (error) => {
-      console.error('Error:', error);
-    },
-  });
-
-  // Custom rendering logic...
-  return (
-    <form onSubmit={handleSubmit}>
-      {/* Your custom form elements */}
-    </form>
-  );
-}
+<WaitlistForm 
+  title="Join our exclusive beta"
+  description="Get early access to our revolutionary product."
+  submitText="Request Access"
+  successTitle="You're on the list!"
+  successDescription="Thank you for joining our waitlist. We'll keep you updated on our progress."
+/>
 ```
 
-## API Reference
+## Next Steps
 
-For a complete API reference, see the [API Reference](./api-reference.md) documentation. 
+Now that you have React Waitlist integrated into your application, you might want to explore:
+
+- [API Reference](./api-reference.md) - Detailed documentation of all available props and options
+- [Customization](./customization.md) - Learn how to customize the appearance and behavior
+- [Webhooks](./webhooks.md) - Integrate with external systems using webhooks
+- [Events](./events.md) - Use the event system for analytics and custom integrations
+- [reCAPTCHA](./recaptcha.md) - Add reCAPTCHA protection to your form
+- [Accessibility](./accessibility.md) - Learn about the accessibility features
+- [Security](./security.md) - Understand the security features and best practices 
