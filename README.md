@@ -4,15 +4,16 @@ A customizable, self-contained waitlist component for React that integrates with
 
 ## Features
 
-- 🔒 Secure integration with [Resend audiences](https://resend.com/blog/manage-subscribers-using-resend-audiences)
-- 🎨 Fully customizable UI with theming support
-- 🤖 Bot and spam protection with reCAPTCHA v3
-- ♿ Accessibility built-in
-- 📊 Analytics tracking
-- 🔌 Easy to integrate with any React application
-- 🔔 Event system for client-side integrations
-- 🪝 Webhook support for integration with external systems
-- 🛡️ Multiple security options built into the package
+- Secure integration with [Resend audiences](https://resend.com/blog/manage-subscribers-using-resend-audiences)
+- Fully customizable UI with theming support
+- Bot and spam protection with reCAPTCHA v3
+- Accessibility built-in
+- Analytics tracking
+- Easy to integrate with any React application
+- Event system for client-side integrations
+- Webhook support for integration with external systems
+- Multiple security options built into the package
+- SSR Support for Next.js and other frameworks
 
 ## Installation
 
@@ -22,6 +23,8 @@ A customizable, self-contained waitlist component for React that integrates with
 npm install react-waitlist
 # or
 yarn add react-waitlist
+# or
+pnpm add react-waitlist
 ```
 
 ### Backend (Optional but recommended for security)
@@ -350,66 +353,55 @@ export async function POST(req) {
 
 ## Customization
 
+The component is designed to be highly customizable to match your application's design system.
+
 ```jsx
-<WaitlistForm 
-  // Event handlers
-  onView={({ timestamp }) => console.log('Form viewed at', timestamp)}
-  onSubmit={({ formData }) => console.log('Form submitted with', formData)}
-  onSuccess={({ response }) => console.log('Success:', response)}
-  onError={({ error }) => console.error('Error:', error)}
-  
-  // Content
-  title="Join our waitlist"
-  description="Be the first to know when we launch"
-  submitText="Join waitlist"
-  successTitle="You're on the list!"
-  successDescription="Thank you for joining our waitlist. We'll keep you updated."
-  
-  // Custom fields
-  fields={[
-    { name: 'email', type: 'email', required: true, label: 'Email' },
-    { name: 'firstName', type: 'text', required: false, label: 'First Name' },
-    { name: 'company', type: 'text', required: false, label: 'Company' },
-    { 
-      name: 'role', 
-      type: 'select', 
-      options: ['Developer', 'Designer', 'Product Manager', 'Other'],
-      label: 'Role',
-      metadata: true
-    }
-  ]}
-  
-  // Theme
-  theme={{
-    colors: {
-      primary: '#3182CE',
-      secondary: '#805AD5',
-      // ...
-    },
-    // ...
-  }}
-  
-  // Security with reCAPTCHA (requires proxy endpoint)
-  security={{
-    enableReCaptcha: true,
-    reCaptchaSiteKey: "your_recaptcha_site_key",
-    reCaptchaMinScore: 0.5,
-    enableHoneypot: true,
-    checkSubmissionTime: true
-  }}
-  recaptchaProxyEndpoint="https://your-api.com/api/recaptcha-proxy"
-  
-  // Webhooks (requires proxy endpoint for security)
-  webhooks={[
-    {
-      url: "https://your-webhook-endpoint.com/hook",
-      events: ["success"],
-      includeAllFields: true
-    }
-  ]}
-  webhookProxyEndpoint="https://your-api.com/api/webhook-proxy"
-/>
+import { WaitlistForm } from 'react-waitlist';
+
+function App() {
+  return (
+    <WaitlistForm 
+      // Theme customization
+      theme={{
+        colors: {
+          primary: '#6366F1',
+          secondary: '#8B5CF6',
+          background: '#FFFFFF',
+          text: '#1F2937',
+          error: '#EF4444',
+          success: '#10B981',
+        }
+      }}
+      
+      // Apply custom CSS class
+      className="my-custom-waitlist"
+      
+      // Content customization
+      title="Join our waitlist"
+      description="Be the first to know when we launch"
+      submitText="Join Now"
+      successTitle="You're on the list!"
+      successDescription="Thank you for joining our waitlist."
+      
+      // Field customization
+      fields={[
+        { name: 'email', type: 'email', required: true, label: 'Email' },
+        { name: 'firstName', type: 'text', required: false, label: 'First Name' },
+        { name: 'role', type: 'select', options: ['Developer', 'Designer', 'Other'], required: false }
+      ]}
+    />
+  );
+}
 ```
+
+The component supports multiple customization approaches:
+
+- **Theme Configuration**: Customize colors, typography, spacing, and more via the `theme` prop
+- **CSS Classes**: Apply custom styles with the `className` prop
+- **External CSS**: Use CSS variables and advanced styling techniques
+- **Design System Integration**: Seamlessly integrate with your existing design system
+
+For detailed customization options and examples, see the [Customization Guide](docs/customization.md).
 
 ## Architecture
 

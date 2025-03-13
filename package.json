@@ -1,7 +1,7 @@
 {
   "name": "react-waitlist",
-  "version": "0.1.5-beta.1",
-  "description": "A customizable waitlist component for React that integrates with Resend audiences",
+  "version": "1.0.0-beta.1",
+  "description": "A customizable waitlist form component for React applications",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -16,6 +16,11 @@
       "import": "./dist/server.esm.js",
       "require": "./dist/server.js",
       "types": "./dist/server.d.ts"
+    },
+    "./client": {
+      "import": "./dist/client.esm.js",
+      "require": "./dist/client.js",
+      "types": "./dist/client.d.ts"
     }
   },
   "files": [
@@ -77,7 +82,6 @@
     "@types/jest": "^29.5.11",
     "@types/jest-axe": "^3.5.9",
     "@types/react": "^18.2.48",
-    "axios": "^1.8.2",
     "babel-jest": "^29.7.0",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",

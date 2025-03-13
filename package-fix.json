@@ -1,0 +1,49 @@
+{
+  "name": "react-waitlist",
+  "version": "0.1.5-beta.2",
+  "description": "A customizable waitlist component for React that integrates with Resend audiences",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./server": {
+      "import": "./dist/server.esm.js",
+      "require": "./dist/server.js",
+      "types": "./dist/server.d.ts"
+    },
+    "./client": {
+      "import": "./dist/client.esm.js",
+      "require": "./dist/client.js",
+      "types": "./dist/client.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:e2e": "jest tests/e2e",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "lint": "eslint src --ext .ts,.tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "predeploy-storybook": "npm run build-storybook && npx msw init storybook-static --save && npx cpy-cli .nojekyll storybook-static",
+    "deploy-storybook": "gh-pages -d storybook-static",
+    "prepublishOnly": "npm run build",
+    "version": "node scripts/update-changelog.js && git add CHANGELOG.md"
+  }
+} 

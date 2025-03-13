@@ -209,7 +209,7 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     // Validate the field
     const field = fields.find((f) => f.name === name);
     if (field) {
-      const result = validateForm([field], { [name]: newValue });
+      const result = validateForm({ [name]: newValue }, [field]);
       setValidationResults((prev) => ({
         ...prev,
         ...result,
@@ -246,7 +246,7 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     });
     
     // Validate all fields
-    const results = validateForm(fields, formValues);
+    const results = validateForm(formValues, fields);
     setValidationResults(results);
     
     if (!isFormValid(results)) {

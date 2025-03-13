@@ -1,89 +1,160 @@
 import { CSSProperties } from 'react';
-
-/**
- * Animation types
- */
-export type AnimationType = 'fade' | 'slide' | 'fadeSlide' | 'scale' | 'none';
+import { ThemeConfig } from '../types';
 
 /**
  * Animation configuration
  */
 export interface AnimationConfig {
-  /** Type of animation */
-  type?: AnimationType;
-  /** Duration in milliseconds */
-  duration?: number;
-  /** Easing function */
+  enabled?: boolean;
+  duration?: string;
   easing?: string;
-  /** Delay in milliseconds */
-  delay?: number;
+  type?: 'fade' | 'slide' | 'scale' | 'none';
+  effects?: {
+    hover?: boolean;
+    focus?: boolean;
+    loading?: boolean;
+    success?: boolean;
+  };
 }
 
 /**
  * Default animation configuration
  */
 export const defaultAnimation: AnimationConfig = {
-  type: 'fadeSlide',
-  duration: 300,
+  enabled: true,
+  duration: '0.3s',
   easing: 'ease-in-out',
-  delay: 0,
+  type: 'fade',
+  effects: {
+    hover: true,
+    focus: true,
+    loading: true,
+    success: true,
+  },
 };
 
 /**
- * Get animation styles based on configuration and state
+ * Get animation styles based on animation configuration and reduced motion preference
  */
 export const getAnimationStyles = (
   config: AnimationConfig = defaultAnimation,
-  state: 'enter' | 'exit' = 'enter',
-  prefersReducedMotion = false
-): CSSProperties => {
-  // If reduced motion is preferred, return minimal animation
-  if (prefersReducedMotion) {
+  reducedMotion: boolean = false
+): Record<string, CSSProperties> => {
+  // If animations are disabled or reduced motion is preferred, return empty styles
+  if (!config.enabled || reducedMotion || config.type === 'none') {
     return {
-      transition: 'opacity 0.1s ease',
+      fadeIn: {},
+      fadeOut: {},
+      slideIn: {},
+      slideOut: {},
+      scaleIn: {},
+      scaleOut: {},
+      pulse: {},
+      spin: {},
     };
   }
 
-  const { type, duration, easing, delay } = {
-    ...defaultAnimation,
-    ...config,
-  };
+  const duration = config.duration || '0.3s';
+  const easing = config.easing || 'ease-in-out';
 
-  // Base transition style
-  const baseStyle: CSSProperties = {
-    transition: `all ${duration}ms ${easing} ${delay}ms`,
+  return {
+    fadeIn: {
+      animation: `fadeIn ${duration} ${easing}`,
+      opacity: 1,
+    },
+    fadeOut: {
+      animation: `fadeOut ${duration} ${easing}`,
+      opacity: 0,
+    },
+    slideIn: {
+      animation: `slideIn ${duration} ${easing}`,
+      transform: 'translateY(0)',
+    },
+    slideOut: {
+      animation: `slideOut ${duration} ${easing}`,
+      transform: 'translateY(20px)',
+    },
+    scaleIn: {
+      animation: `scaleIn ${duration} ${easing}`,
+      transform: 'scale(1)',
+    },
+    scaleOut: {
+      animation: `scaleOut ${duration} ${easing}`,
+      transform: 'scale(0.95)',
+    },
+    pulse: {
+      animation: `pulse 2s ${easing} infinite`,
+    },
+    spin: {
+      animation: `spin 1s linear infinite`,
+    },
   };
+};
 
-  // If no animation, return empty styles
-  if (type === 'none') {
+/**
+ * Generate CSS keyframes for animations
+ */
+export const generateAnimationKeyframes = (): string => {
+  return `
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+      from { transform: translateY(0); opacity: 1; }
+      to { transform: translateY(20px); opacity: 0; }
+    }
+    
+    @keyframes scaleIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes scaleOut {
+      from { transform: scale(1); opacity: 1; }
+      to { transform: scale(0.95); opacity: 0; }
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  `;
+};
+
+/**
+ * Get hover effect styles based on theme configuration
+ */
+export const getHoverEffects = (theme: ThemeConfig): Record<string, CSSProperties> => {
+  if (!theme.animation?.effects?.hover) {
     return {};
   }
 
-  // Animation-specific styles
-  switch (type) {
-    case 'fade':
-      return {
-        ...baseStyle,
-        opacity: state === 'enter' ? 1 : 0,
-      };
-    case 'slide':
-      return {
-        ...baseStyle,
-        transform: state === 'enter' ? 'translateY(0)' : 'translateY(20px)',
-      };
-    case 'fadeSlide':
-      return {
-        ...baseStyle,
-        opacity: state === 'enter' ? 1 : 0,
-        transform: state === 'enter' ? 'translateY(0)' : 'translateY(20px)',
-      };
-    case 'scale':
-      return {
-        ...baseStyle,
-        opacity: state === 'enter' ? 1 : 0,
-        transform: state === 'enter' ? 'scale(1)' : 'scale(0.95)',
-      };
-    default:
-      return baseStyle;
-  }
+  return {
+    buttonHover: {
+      backgroundColor: theme.colors?.secondary || '#805AD5',
+      transform: 'translateY(-1px)',
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    },
+    inputHover: {
+      borderColor: theme.colors?.primary || '#3182CE',
+    },
+  };
 }; 

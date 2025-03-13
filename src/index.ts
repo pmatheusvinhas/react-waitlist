@@ -1,13 +1,15 @@
-import { WaitlistForm } from './components';
-import ClientWaitlist from './components/ClientWaitlist';
-import { WaitlistProps } from './types';
+// Components
+export { default as WaitlistForm } from './components/WaitlistForm';
+export { default as ClientWaitlist } from './components/ClientWaitlist';
 
-// Export the main component as both default and named export
-export default WaitlistForm;
-export { WaitlistForm, ClientWaitlist };
-
-// Export types and utilities
+// Types
 export * from './types';
-export * from './utils';
-export * from './styles';
-export * from './hooks'; 
+
+// Styles and Themes
+export { defaultTheme, tailwindDefaultTheme, materialUIDefaultTheme } from './styles';
+
+// Hooks
+export * from './hooks';
+
+// Utils
+export * from './utils'; 

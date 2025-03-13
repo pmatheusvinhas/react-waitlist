@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, CSSProperties } from 'react';
 import { Field, WaitlistProps, A11yConfig, SecurityConfig, AnalyticsConfig, ResendMapping, ThemeConfig } from '../types';
 import { validateForm, isFormValid, generateHoneypotFieldName, isLikelyBot, getHoneypotStyles, trackEvent, isReCaptchaEnabled } from '../utils';
-import { mergeTheme, getAnimationStyles, AnimationConfig, defaultAnimation } from '../styles';
+import { mergeTheme, getAnimationStyles, AnimationConfig, defaultAnimation, applyFrameworkAdapter } from '../styles';
 import { AriaProvider, useAria, useAnnounce, useAriaLabels, useReducedMotion } from '../a11y';
 import { useResendAudience, ResendContact } from '../hooks/useResendAudience';
 import { useReCaptcha } from '../hooks/useReCaptcha';
@@ -25,41 +25,10 @@ const defaultFields: Field[] = [
 type FormState = 'idle' | 'submitting' | 'success' | 'error';
 
 /**
- * Option type for select fields
+ * Extended field with additional properties
  */
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-/**
- * Extended field type with additional properties
- */
-interface ExtendedField extends Omit<Field, 'options'> {
+interface ExtendedField extends Field {
   checkboxLabel?: string;
-  options?: (string | SelectOption)[];
-}
-
-/**
- * Extended theme with component-specific styles
- */
-interface ExtendedTheme extends ThemeConfig {
-  container?: CSSProperties;
-  title?: CSSProperties;
-  description?: CSSProperties;
-  form?: CSSProperties;
-  fieldContainer?: CSSProperties;
-  label?: CSSProperties;
-  input?: CSSProperties;
-  inputError?: CSSProperties;
-  checkboxContainer?: CSSProperties;
-  checkbox?: CSSProperties;
-  checkboxLabel?: CSSProperties;
-  button?: CSSProperties;
-  buttonLoading?: CSSProperties;
-  errorMessage?: CSSProperties;
-  formError?: CSSProperties;
-  required?: CSSProperties;
 }
 
 /**
@@ -78,6 +47,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   successDescription = 'Thank you for joining our waitlist. We\'ll keep you updated.',
   fields = defaultFields,
   theme: userTheme,
+  frameworkConfig,
   security = {
     enableHoneypot: true,
     checkSubmissionTime: true,
@@ -92,8 +62,13 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   className,
   style,
 }) => {
+  // Apply framework adapter if provided and merge with user theme
+  const adaptedTheme = frameworkConfig 
+    ? applyFrameworkAdapter(userTheme, frameworkConfig) 
+    : userTheme;
+  
   // Merge user theme with default theme
-  const theme = mergeTheme(userTheme) as ExtendedTheme;
+  const theme = mergeTheme(adaptedTheme);
   
   // Get accessibility hooks
   const announce = useAnnounce();
@@ -120,78 +95,63 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   
   // Form state
   const [formState, setFormState] = useState<FormState>('idle');
-  const [formValues, setFormValues] = useState<Record<string, string | boolean>>(() => {
-    // Initialize with default values
-    const initialValues: Record<string, string | boolean> = {};
-    fields.forEach((field) => {
-      if (field.defaultValue !== undefined) {
-        initialValues[field.name] = field.defaultValue;
-      } else if (field.type === 'checkbox') {
-        initialValues[field.name] = false;
-      } else {
-        initialValues[field.name] = '';
-      }
-    });
-    return initialValues;
-  });
-  const [validationResults, setValidationResults] = useState<Record<string, { valid: boolean; message?: string }>>({});
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string | boolean>>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, { valid: boolean; message?: string }>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Security
-  const formStartTime = useRef<number>(Date.now());
-  const honeypotFieldName = useRef<string>(generateHoneypotFieldName());
+  // Honeypot field name (for bot detection)
+  const honeypotFieldName = useRef(generateHoneypotFieldName());
   
-  // Update form values when fields change
+  // Submission time tracking (for bot detection)
+  const formLoadTime = useRef(Date.now());
+  
+  // Initialize form values from default values
   useEffect(() => {
     const initialValues: Record<string, string | boolean> = {};
+    
     fields.forEach((field) => {
-      if (field.defaultValue !== undefined) {
-        initialValues[field.name] = field.defaultValue;
-      } else if (field.type === 'checkbox') {
-        initialValues[field.name] = false;
+      if (field.type === 'checkbox') {
+        initialValues[field.name] = field.defaultValue === true;
+      } else if (field.defaultValue !== undefined) {
+        initialValues[field.name] = field.defaultValue as string;
       } else {
         initialValues[field.name] = '';
       }
     });
+    
     setFormValues(initialValues);
   }, [fields]);
   
-  // Track view event on mount
+  // Track view event
   useEffect(() => {
-    trackEvent(analytics, { event: 'view' });
-  }, [analytics]);
+    if (onView) {
+      onView({ timestamp: new Date().toISOString() });
+    }
+    
+    if (analytics?.enabled) {
+      trackEvent(analytics, { event: 'view' });
+    }
+  }, [onView, analytics]);
   
-  // Handle input change
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value, type } = e.target;
-    const isCheckbox = type === 'checkbox';
-    const newValue = isCheckbox 
+  // Handle form input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, type } = e.target;
+    const value = type === 'checkbox' 
       ? (e.target as HTMLInputElement).checked 
-      : value;
+      : e.target.value;
     
     setFormValues((prev) => ({
       ...prev,
-      [name]: newValue,
+      [name]: value,
     }));
     
-    // Validate the field
-    const field = fields.find((f) => f.name === name);
-    if (field) {
-      const result = validateForm([field], { [name]: newValue });
-      setValidationResults((prev) => ({
+    // Clear validation error when field is changed
+    if (validationErrors[name]) {
+      setValidationErrors((prev) => ({
         ...prev,
-        ...result,
+        [name]: { valid: true, message: '' },
       }));
-    }
-    
-    // Track focus event (only once per field)
-    if (name === 'email' && !formValues[name]) {
-      trackEvent(analytics, { 
-        event: 'focus',
-        properties: { field: name }
-      });
     }
   };
   
@@ -199,225 +159,196 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Track submit event
-    trackEvent(analytics, { event: 'submit' });
+    // Don't allow multiple submissions
+    if (isSubmitting) return;
     
-    // Call onSubmit callback if provided
-    if (onSubmit) {
-      onSubmit({
-        timestamp: new Date().toISOString(),
-        formData: { ...formValues },
-      });
-    }
+    // Reset form error
+    setFormError(null);
     
-    // Validate all fields
-    const results = validateForm(fields, formValues);
-    setValidationResults(results);
-    
-    if (!isFormValid(results)) {
-      // Announce validation errors
-      const firstError = Object.values(results).find(result => !result.valid);
-      if (firstError && firstError.message) {
-        announce(firstError.message, true);
-      }
-      return;
-    }
-    
-    // Check for bot activity
-    if (security.enableHoneypot || security.checkSubmissionTime) {
-      const honeypotValue = formValues[honeypotFieldName.current] as string | undefined;
-      const botCheck = isLikelyBot(
-        honeypotValue,
-        formStartTime.current,
-        1500
-      );
-      
-      if (botCheck.isBot) {
-        console.warn('Bot activity detected:', botCheck.reason);
-        // Pretend success to not alert bots
-        setFormState('success');
+    // Check for honeypot (bot detection)
+    if (security.enableHoneypot) {
+      const honeypotValue = (e.target as any)[honeypotFieldName.current]?.value;
+      if (honeypotValue) {
+        console.warn('Honeypot triggered, likely bot submission');
+        setFormError('Something went wrong. Please try again later.');
         return;
       }
     }
     
-    // Set submitting state
+    // Check submission time (bot detection)
+    if (security.checkSubmissionTime) {
+      const submissionTime = Date.now();
+      const timeElapsed = submissionTime - formLoadTime.current;
+    
+      if (isLikelyBot(formValues.honeypot as string, formLoadTime.current)) {
+        console.warn('Submission time check triggered, likely bot submission');
+        setFormError('Something went wrong. Please try again later.');
+        return;
+      }
+    }
+    
+    // Validate form
+    const validation = validateForm(formValues, fields);
+    setValidationErrors(validation);
+    
+    if (!Object.values(validation).every(result => result.valid)) {
+      return;
+    }
+    
+    // Execute reCAPTCHA if enabled
+    if (security.reCaptchaSiteKey && reCaptcha && reCaptcha.isLoaded) {
+      try {
+        await reCaptcha.executeReCaptcha();
+      } catch (error) {
+        console.error('reCAPTCHA error:', error);
+        setFormError('Error verifying reCAPTCHA. Please try again.');
+        return;
+      }
+    }
+    
+    // Start submission
+    setIsSubmitting(true);
     setFormState('submitting');
-    announce('Submitting your information...', false);
+    
+    // Prepare submission data
+    const submissionData = {
+      timestamp: new Date().toISOString(),
+      formData: { ...formValues },
+    };
+    
+    // Call onSubmit callback if provided
+    if (onSubmit) {
+      onSubmit(submissionData);
+    }
+    
+    // Track submit event
+    if (analytics?.enabled) {
+      trackEvent(analytics, { 
+        event: 'submit',
+        properties: submissionData.formData
+      });
+    }
     
     try {
-      // Execute reCAPTCHA if enabled
-      let reCaptchaToken: string | undefined;
-      if (reCaptchaEnabled && reCaptcha?.isLoaded) {
-        try {
-          reCaptchaToken = await reCaptcha.executeReCaptcha();
+      // Handle form submission with onSuccess callback
+      if (onSuccess) {
+        const result = await onSuccess({
+          ...submissionData,
+          response: null,
+        });
+        
+        // If result is returned and success is true, show success message
+        if (result && result.success) {
+          setFormState('success');
           
-          // Verify token if proxy endpoint is provided
-          if (recaptchaProxyEndpoint && reCaptchaToken) {
-            const verifyResponse = await fetch(recaptchaProxyEndpoint, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                token: reCaptchaToken,
-                action: 'submit_waitlist',
-              }),
+          // Track success event
+          if (analytics?.enabled) {
+            trackEvent(analytics, { 
+              event: 'success',
+              properties: submissionData.formData
             });
-            
-            const verifyResult = await verifyResponse.json();
-            
-            if (!verifyResult.success) {
-              throw new Error('reCAPTCHA verification failed');
+          }
+          
+          // Announce success to screen readers
+          if (announce) {
+            announce('Form submitted successfully');
+      }
+      
+          // Add to Resend audience if configured
+          if (resendAudience && resendAudienceId) {
+            try {
+              const contact: ResendContact = {
+                email: formValues.email as string,
+                firstName: formValues.firstName as string,
+                lastName: formValues.lastName as string,
+                unsubscribed: false,
+              };
+              
+              // Add metadata if mapping is provided
+              if (resendMapping?.metadata && Array.isArray(resendMapping.metadata)) {
+                const metadata: Record<string, any> = {};
+                
+                resendMapping.metadata.forEach((field) => {
+                  if (formValues[field] !== undefined) {
+                    metadata[field] = formValues[field];
+          }
+        });
+                
+                if (Object.keys(metadata).length > 0) {
+                  contact.metadata = metadata;
+                }
+              }
+              
+              await resendAudience.addContact(contact);
+            } catch (error) {
+              console.error('Failed to add contact to Resend audience:', error);
             }
           }
-        } catch (error) {
-          // Handle reCAPTCHA error
+        } else {
+          // If result is returned but success is false, show error message
           setFormState('error');
-          announce('reCAPTCHA verification failed. Please try again.', true);
+          setFormError(result?.error || 'Something went wrong. Please try again later.');
           
-          // Call onError callback
-          if (onError) {
-            onError({
-              timestamp: new Date().toISOString(),
-              formData: { ...formValues },
-              error: error instanceof Error ? error : new Error('reCAPTCHA verification failed'),
+          // Track error event
+          if (analytics?.enabled) {
+            trackEvent(analytics, { 
+              event: 'error',
+              properties: { message: result?.error || 'Unknown error' }
             });
           }
-          
-          return;
         }
-      }
-      
-      // Prepare contact data for Resend
-      const contactData: ResendContact = {
-        email: formValues[resendMapping?.email || 'email'] as string,
-      };
-      
-      // Add first name if available
-      if (resendMapping?.firstName && formValues[resendMapping.firstName]) {
-        contactData.firstName = formValues[resendMapping.firstName] as string;
-      }
-      
-      // Add last name if available
-      if (resendMapping?.lastName && formValues[resendMapping.lastName]) {
-        contactData.lastName = formValues[resendMapping.lastName] as string;
-      }
-      
-      // Add metadata fields
-      if (resendMapping?.metadata && resendMapping.metadata.length > 0) {
-        contactData.metadata = {};
-        resendMapping.metadata.forEach((fieldName) => {
-          if (formValues[fieldName] !== undefined) {
-            contactData.metadata![fieldName] = formValues[fieldName];
-          }
-        });
-      }
-      
-      // Send data to Resend API using the hook (if available)
-      let data;
-      if (resendAudience) {
-        data = await resendAudience.addContact(contactData);
       } else {
-        // If Resend integration is not configured, create a mock response
-        data = {
-          id: `mock_${Date.now()}`,
-          email: contactData.email,
-          firstName: contactData.firstName,
-          lastName: contactData.lastName,
-          createdAt: new Date().toISOString(),
-        };
-      }
-      
-      // Set success state
+        // If no onSuccess callback is provided, show success message
       setFormState('success');
       
-      // Announce success
-      announce(ariaLabels.successMessage || 'Successfully joined the waitlist', true);
-      
       // Track success event
-      trackEvent(analytics, { 
-        event: 'success',
-        properties: { 
-          email: formValues[resendMapping?.email || 'email'] 
+        if (analytics?.enabled) {
+          trackEvent(analytics, { 
+            event: 'success',
+            properties: submissionData.formData
+          });
         }
-      });
-      
-      // Call onSuccess callback
-      if (onSuccess) {
-        onSuccess({
-          timestamp: new Date().toISOString(),
-          formData: formValues,
-          response: data
-        });
+        
+        // Announce success to screen readers
+        if (announce) {
+          announce('Form submitted successfully');
+        }
       }
     } catch (error) {
-      // Set error state
+      // Handle error
       setFormState('error');
-      const errorMsg = error instanceof Error ? error.message : 'An unexpected error occurred';
-      setErrorMessage(errorMsg);
+      setFormError((error as Error).message || 'Something went wrong. Please try again later.');
       
-      // Announce error
-      announce(ariaLabels.errorMessage || `Error: ${errorMsg}`, true);
-      
-      // Track error event
-      trackEvent(analytics, { 
-        event: 'error',
-        properties: { 
-          message: errorMsg 
-        }
-      });
-      
-      // Call onError callback
-      if (onError && error instanceof Error) {
+      // Call onError callback if provided
+      if (onError) {
         onError({
-          timestamp: new Date().toISOString(),
-          formData: formValues,
-          error: error
-        });
-      } else if (onError) {
-        onError({
-          timestamp: new Date().toISOString(),
-          formData: formValues,
-          error: new Error(errorMsg)
+          ...submissionData,
+          error: error as Error,
         });
       }
+      
+      // Track error event
+      if (analytics?.enabled) {
+        trackEvent(analytics, { 
+          event: 'error',
+          properties: { message: (error as Error).message }
+        });
+      }
+      
+      // Announce error to screen readers
+      if (announce) {
+        announce('Error submitting form');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
-  // Reset form to initial state
-  const resetForm = () => {
-    setFormState('idle');
-    setErrorMessage('');
-    
-    // Reset form values
-    const initialValues: Record<string, string | boolean> = {};
-    fields.forEach((field) => {
-      if (field.defaultValue !== undefined) {
-        initialValues[field.name] = field.defaultValue;
-      } else if (field.type === 'checkbox') {
-        initialValues[field.name] = false;
-      } else {
-        initialValues[field.name] = '';
-      }
-    });
-    setFormValues(initialValues);
-    
-    // Reset validation results
-    setValidationResults({});
-    
-    // Reset security measures
-    formStartTime.current = Date.now();
-    honeypotFieldName.current = generateHoneypotFieldName();
-    
-    // Announce form reset
-    announce('Form has been reset', false);
-  };
-  
-  // Get animation styles based on user preferences
-  const animationConfig: AnimationConfig = reducedMotion ? { type: 'none' } : defaultAnimation;
-  const animations = {
-    fadeIn: getAnimationStyles(animationConfig, 'enter'),
-  };
+  // Get animation styles based on reduced motion preference
+  const animations = getAnimationStyles(
+    theme.animation as AnimationConfig || defaultAnimation,
+    reducedMotion
+  );
   
   // Render form based on state
   if (formState === 'success') {
@@ -425,15 +356,21 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
       <div
         className={className}
         style={{
-          ...(theme.container || {}),
+          ...(theme.components?.container || {}),
           ...style,
         }}
         role="status"
         aria-live="polite"
       >
-        <div style={animations.fadeIn}>
-          <h2 style={theme.title || {}}>{successTitle}</h2>
-          <p style={theme.description || {}}>{successDescription}</p>
+        <div 
+          className="success-container"
+          style={{
+            ...(theme.components?.successContainer || {}),
+            ...animations.fadeIn
+          }}
+        >
+          <h2 style={theme.components?.successTitle || {}}>{successTitle}</h2>
+          <p style={theme.components?.successDescription || {}}>{successDescription}</p>
         </div>
       </div>
     );
@@ -444,32 +381,42 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
     <div
       className={className}
       style={{
-        ...(theme.container || {}),
+        ...(theme.components?.container || {}),
         ...style,
       }}
     >
-      <h2 style={theme.title || {}}>{title}</h2>
-      <p style={theme.description || {}}>{description}</p>
+      <h2 style={theme.components?.title || {}}>{title}</h2>
+      <p style={theme.components?.description || {}}>{description}</p>
       
       <form
         onSubmit={handleSubmit}
-        style={theme.form || {}}
+        style={theme.components?.form || {}}
         aria-label={ariaLabels.form || 'Waitlist signup form'}
       >
         {/* Visible form fields */}
         {fields.map((field) => {
           const extendedField = field as ExtendedField;
-          const validation = validationResults[field.name];
-          const isInvalid = validation && !validation.valid;
+          const validation = validationErrors[field.name] || { valid: true, message: '' };
+          const isInvalid = !validation.valid;
           
           return (
-            <div key={field.name} style={theme.fieldContainer || {}}>
+            <div 
+              key={field.name}
+              style={theme.components?.fieldContainer || {}}
+            >
               <label
                 htmlFor={field.name}
-                style={theme.label || {}}
+                style={theme.components?.label || {}}
               >
                 {field.label}
-                {field.required && <span style={theme.required || { color: 'red' }}> *</span>}
+                {field.required && (
+                  <span 
+                    aria-hidden="true"
+                    style={theme.components?.required || {}}
+                  >
+                    *
+                  </span>
+                )}
               </label>
               
               {field.type === 'select' ? (
@@ -482,8 +429,8 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
                   aria-invalid={isInvalid}
                   aria-describedby={isInvalid ? `${field.name}-error` : undefined}
                   style={{
-                    ...(theme.input || {}),
-                    ...(isInvalid ? (theme.inputError || {}) : {}),
+                    ...(theme.components?.input || {}),
+                    ...(isInvalid ? (theme.components?.inputError || {}) : {}),
                   }}
                 >
                   <option value="">{field.placeholder || 'Select an option'}</option>
@@ -492,17 +439,9 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
                       {option}
                     </option>
                   ))}
-                  {extendedField.options?.filter(opt => typeof opt !== 'string').map((option) => {
-                    const typedOption = option as SelectOption;
-                    return (
-                      <option key={typedOption.value} value={typedOption.value}>
-                        {typedOption.label}
-                      </option>
-                    );
-                  })}
                 </select>
               ) : field.type === 'checkbox' ? (
-                <div style={theme.checkboxContainer || {}}>
+                <div style={theme.components?.checkboxContainer || {}}>
                   <input
                     id={field.name}
                     name={field.name}
@@ -512,9 +451,9 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
                     required={field.required}
                     aria-invalid={isInvalid}
                     aria-describedby={isInvalid ? `${field.name}-error` : undefined}
-                    style={theme.checkbox || {}}
+                    style={theme.components?.checkbox || {}}
                   />
-                  <span style={theme.checkboxLabel || {}}>{extendedField.checkboxLabel || field.label}</span>
+                  <span style={theme.components?.checkboxLabel || {}}>{extendedField.checkboxLabel || field.label}</span>
                 </div>
               ) : (
                 <input
@@ -528,8 +467,8 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
                   aria-invalid={isInvalid}
                   aria-describedby={isInvalid ? `${field.name}-error` : undefined}
                   style={{
-                    ...(theme.input || {}),
-                    ...(isInvalid ? (theme.inputError || {}) : {}),
+                    ...(theme.components?.input || {}),
+                    ...(isInvalid ? (theme.components?.inputError || {}) : {}),
                   }}
                 />
               )}
@@ -537,7 +476,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
               {isInvalid && (
                 <div
                   id={`${field.name}-error`}
-                  style={theme.errorMessage || {}}
+                  style={theme.components?.errorMessage || {}}
                   role="alert"
                 >
                   {validation.message}
@@ -554,39 +493,38 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
               Please leave this field empty
             </label>
             <input
-              id={honeypotFieldName.current}
-              name={honeypotFieldName.current}
               type="text"
-              onChange={handleChange}
+              name={honeypotFieldName.current}
+              id={honeypotFieldName.current}
               tabIndex={-1}
-              aria-hidden="true"
               autoComplete="off"
             />
+          </div>
+        )}
+        
+        {/* Form error message */}
+        {formError && (
+          <div 
+            style={theme.components?.formError || {}}
+            role="alert"
+          >
+            {formError}
           </div>
         )}
         
         {/* Submit button */}
         <button
           type="submit"
+          disabled={isSubmitting || !isFormValid(validationErrors)}
           style={{
-            ...(theme.button || {}),
-            ...(formState === 'submitting' ? (theme.buttonLoading || {}) : {}),
+            ...(theme.components?.button || {}),
+            ...(isSubmitting ? (theme.components?.buttonLoading || {}) : {}),
           }}
-          disabled={formState === 'submitting'}
-          aria-label={ariaLabels.submitButton || 'Submit to join waitlist'}
+          aria-label={ariaLabels.submitButton || 'Join the waitlist'}
+          aria-busy={isSubmitting}
         >
-          {formState === 'submitting' ? 'Submitting...' : submitText}
+          {isSubmitting ? 'Submitting...' : submitText}
         </button>
-        
-        {/* Error message */}
-        {formState === 'error' && (
-          <div
-            style={theme.formError || {}}
-            role="alert"
-          >
-            {errorMessage}
-          </div>
-        )}
       </form>
     </div>
   );

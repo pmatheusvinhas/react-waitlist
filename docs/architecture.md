@@ -27,14 +27,28 @@ This architecture consists of two main components:
    - Securely handles API keys and sensitive configuration
    - Renders a placeholder with serialized props
    - No React hooks or client-side code
+   - Imported from `react-waitlist/server`
 
 2. **ClientWaitlist (Client Component)**:
    - Has the `'use client'` directive
    - Hydrates the placeholder rendered by ServerWaitlist
    - Handles all client-side interactivity
    - Uses React hooks for state management
+   - Imported from `react-waitlist/client`
 
 This approach ensures that sensitive information like API keys stays on the server while providing a seamless user experience with client-side interactivity.
+
+#### Import Structure for SSR
+
+```jsx
+// In server components:
+import { ServerWaitlist } from 'react-waitlist/server';
+
+// In client components:
+import { ClientWaitlist } from 'react-waitlist/client';
+```
+
+This separation is crucial for frameworks like Next.js that enforce strict boundaries between server and client code.
 
 ### 2. Client-Side with Security Utilities
 
@@ -98,7 +112,12 @@ The package provides multiple entry points:
 
 2. **react-waitlist/server**: Server-side components and utilities
    ```jsx
-   import { ServerWaitlist, ClientWaitlist, createResendProxy } from 'react-waitlist/server';
+   import { ServerWaitlist, createResendProxy } from 'react-waitlist/server';
+   ```
+
+3. **react-waitlist/client**: Client-side components for hydration
+   ```jsx
+   import { ClientWaitlist } from 'react-waitlist/client';
    ```
 
 ## Data Flow

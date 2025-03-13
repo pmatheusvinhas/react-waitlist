@@ -72,6 +72,45 @@ export interface ThemeConfig {
       full?: string;
     };
   };
+  // New properties for framework integration
+  framework?: {
+    type: 'tailwind' | 'material-ui' | 'custom';
+    config?: any; // Framework-specific configuration
+  };
+  // Component-specific styling
+  components?: {
+    container?: React.CSSProperties;
+    title?: React.CSSProperties;
+    description?: React.CSSProperties;
+    form?: React.CSSProperties;
+    fieldContainer?: React.CSSProperties;
+    label?: React.CSSProperties;
+    input?: React.CSSProperties;
+    inputError?: React.CSSProperties;
+    checkboxContainer?: React.CSSProperties;
+    checkbox?: React.CSSProperties;
+    checkboxLabel?: React.CSSProperties;
+    button?: React.CSSProperties;
+    buttonLoading?: React.CSSProperties;
+    errorMessage?: React.CSSProperties;
+    formError?: React.CSSProperties;
+    required?: React.CSSProperties;
+    successContainer?: React.CSSProperties;
+    successTitle?: React.CSSProperties;
+    successDescription?: React.CSSProperties;
+  };
+  // Advanced styling options
+  animation?: {
+    enabled?: boolean;
+    duration?: string;
+    easing?: string;
+    effects?: {
+      hover?: boolean;
+      focus?: boolean;
+      loading?: boolean;
+      success?: boolean;
+    };
+  };
 }
 
 /**
@@ -195,6 +234,8 @@ export interface WaitlistProps {
   fields?: Field[];
   /** Theme configuration */
   theme?: ThemeConfig;
+  /** Framework configuration (for Tailwind, Material UI, etc.) */
+  frameworkConfig?: any;
   /** Accessibility configuration */
   a11y?: A11yConfig;
   /** Security configuration */
@@ -210,7 +251,7 @@ export interface WaitlistProps {
   /** Callback when submit event occurs */
   onSubmit?: (data: { timestamp: string; formData: Record<string, any> }) => void;
   /** Callback when success event occurs */
-  onSuccess?: (data: { timestamp: string; formData: Record<string, any>; response: any }) => void;
+  onSuccess?: (data: { timestamp: string; formData: Record<string, any>; response: any }) => Promise<{ success: boolean; data?: any; error?: string }>;
   /** Callback when error event occurs */
   onError?: (data: { timestamp: string; formData: Record<string, any>; error: Error }) => void;
   /** Custom CSS class name */

@@ -149,8 +149,8 @@ export const validateFormData = (
  * Validate form fields
  */
 export const validateForm = (
-  fields: Field[],
-  values: Record<string, string | boolean>
+  values: Record<string, string | boolean>,
+  fields: Field[]
 ): Record<string, { valid: boolean; message?: string }> => {
   const validationResults: Record<string, { valid: boolean; message?: string }> = {};
 

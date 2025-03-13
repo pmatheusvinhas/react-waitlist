@@ -47,10 +47,10 @@ import { WaitlistForm } from 'react-waitlist';
 
 ### Server Components
 
-For server-side rendering (SSR) in frameworks like Next.js App Router, use the `ServerWaitlist` and `ClientWaitlist` components:
+For server-side rendering (SSR) in frameworks like Next.js App Router, use the `ServerWaitlist` component:
 
 ```jsx
-import { ServerWaitlist, ClientWaitlist } from 'react-waitlist/server';
+import { ServerWaitlist } from 'react-waitlist/server';
 
 // In a server component:
 <ServerWaitlist 
@@ -58,9 +58,6 @@ import { ServerWaitlist, ClientWaitlist } from 'react-waitlist/server';
   resendAudienceId="your_audience_id"
   title="Join Our Waitlist"
 />
-
-// In a client component or alongside the ServerWaitlist:
-<ClientWaitlist />
 ```
 
 #### ServerWaitlist Props
@@ -84,18 +81,33 @@ import { ServerWaitlist, ClientWaitlist } from 'react-waitlist/server';
 | `resendMapping` | `ResendMapping` | No | Mapping of form fields to Resend contact fields |
 | `webhooks` | `WebhookConfig[]` | No | Array of webhook configurations |
 
+### Client Components
+
+For client-side hydration of server-rendered forms, use the `ClientWaitlist` component:
+
+```jsx
+'use client';
+
+import { ClientWaitlist } from 'react-waitlist/client';
+
+// In a client component:
+<ClientWaitlist />
+```
+
 #### ClientWaitlist Component
 
 The `ClientWaitlist` component is used in conjunction with `ServerWaitlist` to hydrate the server-rendered placeholder with the interactive form.
 
-```jsx
-import { ClientWaitlist } from 'react-waitlist/server';
-
-// Use alongside ServerWaitlist
-<ClientWaitlist />
-```
-
 This component takes no props as it automatically finds and hydrates the placeholder rendered by `ServerWaitlist`.
+
+#### Important Note on Imports
+
+To maintain proper separation between server and client code:
+
+- Always import `ServerWaitlist` from `react-waitlist/server` in server components
+- Always import `ClientWaitlist` from `react-waitlist/client` in client components
+
+This separation is crucial for frameworks like Next.js that enforce strict boundaries between server and client code.
 
 ## Types
 

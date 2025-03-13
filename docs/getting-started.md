@@ -29,8 +29,8 @@ React Waitlist offers multiple integration options to fit your application archi
 For frameworks with server-side rendering support (Next.js App Router, Remix, etc.), use the `ServerWaitlist` and `ClientWaitlist` components to keep API keys secure on the server:
 
 ```jsx
-// app/page.js (Next.js App Router)
-import { ServerWaitlist, ClientWaitlist } from 'react-waitlist/server';
+// app/page.js (Next.js App Router - Server Component)
+import { ServerWaitlist } from 'react-waitlist/server';
 
 export default function Home() {
   return (
@@ -65,9 +65,34 @@ export default function Home() {
           }
         }}
       />
-      {/* Client Component - Hydrates the placeholder */}
-      <ClientWaitlist />
     </main>
+  );
+}
+```
+
+```jsx
+// components/ClientWaitlistWrapper.jsx (Next.js App Router - Client Component)
+'use client';
+
+import { ClientWaitlist } from 'react-waitlist/client';
+
+export default function ClientWaitlistWrapper() {
+  return <ClientWaitlist />;
+}
+```
+
+```jsx
+// app/layout.js (Next.js App Router)
+import ClientWaitlistWrapper from '../components/ClientWaitlistWrapper';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <ClientWaitlistWrapper />
+      </body>
+    </html>
   );
 }
 ```
@@ -87,6 +112,15 @@ export default function Home() {
    - Handles all client-side interactivity
 
 This approach ensures that sensitive information like API keys stays on the server while providing a seamless user experience with client-side interactivity.
+
+#### Important Note on Imports
+
+To maintain proper separation between server and client code:
+
+- Always import `ServerWaitlist` from `react-waitlist/server` in server components
+- Always import `ClientWaitlist` from `react-waitlist/client` in client components
+
+This separation is crucial for frameworks like Next.js that enforce strict boundaries between server and client code.
 
 ### 2. Client-Side with Security Utilities
 

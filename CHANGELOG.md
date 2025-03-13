@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.1] - 2025-03-13
+
+### Added
+- New advanced theming system with built-in support for design frameworks
+- Integration with Tailwind CSS through `tailwindDefaultTheme` and framework adapter
+- Integration with Material UI through `materialUIDefaultTheme` and framework adapter
+- Component-specific styling options in theme configuration
+- Animation configuration with support for reduced motion preferences
+- Comprehensive documentation for the new theming system
+
+### Changed
+- Completely refactored theme architecture for better integration with design systems
+- Enhanced component styling with more granular control
+- Improved theme merging with deep object support
+- Updated examples to demonstrate the new theming capabilities
+- Renamed theme exports to be more descriptive (`tailwindDefaultTheme`, `materialUIDefaultTheme`)
+
+### Fixed
+- Fixed issues with CSS overriding theme settings
+- Improved consistency between theme configuration and rendered styles
+- Better type safety for theme configuration
+
+## [0.1.5-beta.2] - 2025-03-13
+
+### Changed
+- Improved server component architecture to prevent React Context usage in server components
+- Separated client and server exports into distinct entry points
+- Added new `react-waitlist/client` entry point for client components
+- Updated documentation to reflect the new import structure
+
+### Fixed
+- Fixed compatibility issues with Next.js 15 server components
+- Resolved error with `createContext` being used in server components
+
 ## [0.1.5-beta.1] - 2025-03-12
 
 ### Added

@@ -1,8 +1,8 @@
 // Export server-specific components and utilities
-import ServerWaitlist from './server/serverComponent';
-import { createResendProxy, ResendProxyConfig } from './server/proxy';
-import { createWebhookProxy, WebhookProxyConfig } from './server/webhookProxy';
-import { createRecaptchaProxy } from './server/recaptchaProxy';
+import ServerWaitlist from './src/server/serverComponent';
+import { createResendProxy, ResendProxyConfig } from './src/server/proxy';
+import { createWebhookProxy, WebhookProxyConfig } from './src/server/webhookProxy';
+import { createRecaptchaProxy } from './src/server/recaptchaProxy';
 
 // Export the server component
 export { ServerWaitlist };
