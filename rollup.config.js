@@ -3,6 +3,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import babel from '@rollup/plugin-babel';
+import postcss from 'rollup-plugin-postcss';
 import { readFileSync } from 'fs';
 
 // Read package.json
@@ -13,6 +14,12 @@ const plugins = [
   peerDepsExternal(),
   resolve(),
   commonjs(),
+  postcss({
+    extensions: ['.css'],
+    inject: true, // Inject CSS into the bundle
+    extract: false, // Don't extract CSS to a separate file
+    minimize: true, // Minify CSS
+  }),
   typescript({ tsconfig: './tsconfig.json' }),
   babel({
     babelHelpers: 'bundled',

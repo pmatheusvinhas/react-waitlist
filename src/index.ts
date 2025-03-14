@@ -3,6 +3,10 @@
  * Main entry point for client-side usage
  */
 
+// Import and load fonts
+import { loadFonts } from './core/fonts';
+loadFonts();
+
 // Export the main WaitlistForm component
 export { default as WaitlistForm } from './components/WaitlistForm';
 
@@ -26,8 +30,15 @@ export type {
 export { 
   defaultTheme, 
   tailwindDefaultTheme, 
-  materialUIDefaultTheme 
-} from './styles';
+  materialUIDefaultTheme,
+  mergeTheme
+} from './core/theme';
+
+// Export animations
+export {
+  getAnimationStyles
+} from './core/animations';
+export type { AnimationConfig } from './core/animations';
 
 // Export event types
 export type { 

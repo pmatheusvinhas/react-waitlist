@@ -1,4 +1,4 @@
-import { ThemeConfig } from '../core/types';
+import { ThemeConfig } from './types';
 
 /**
  * Tailwind CSS adapter

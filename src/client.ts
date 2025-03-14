@@ -3,6 +3,10 @@
  * This file is specifically for use with SSR frameworks
  */
 
+// Import and load fonts
+import { loadFonts } from './core/fonts';
+loadFonts();
+
 export { default as ClientWaitlist } from './components/ClientWaitlist';
 
 // Export types needed for the client component
@@ -22,8 +26,13 @@ export type {
 export { 
   defaultTheme, 
   tailwindDefaultTheme, 
-  materialUIDefaultTheme 
-} from './styles';
+  materialUIDefaultTheme,
+  mergeTheme
+} from './core/theme';
+
+// Export animations
+export { getAnimationStyles } from './core/animations';
+export type { AnimationConfig } from './core/animations';
 
 // Export event types
 export type { 

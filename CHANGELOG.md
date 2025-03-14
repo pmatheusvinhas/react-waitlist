@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0-beta.3] - 2025-03-14
+
+### Added
+- Added dynamic loading of Google Fonts (Inter and Roboto) for better theme support
+- Created a dedicated fonts module with dynamic font loading functionality
+- Added font family constants for consistent typography across themes
+
+### Changed
+- Enhanced visual distinction between Tailwind and Material UI themes
+- Updated Tailwind theme with brighter blue primary color (#2563EB) and more pronounced visual elements
+- Updated Material UI theme with purple primary color (#9C27B0) and distinctive Material Design styling
+- Improved component-specific styling for better framework differentiation
+- Enhanced typography, spacing, and border styles to make themes more recognizable
+- Switched from CSS imports to dynamic JavaScript font loading for better compatibility
+
+### Fixed
+- Resolved issue where themes appeared too similar, making it difficult to distinguish between them
+- Improved visual feedback in form elements for better user experience
+- Fixed font loading issues by implementing dynamic font loading that works in both client and server environments
+
+## [1.1.0-beta.2] - 2025-03-14
+
+### Changed
+- Completed transition of style files to core module architecture
+- Moved animations and adapters from styles directory to core module
+- Improved theme merging algorithm to better prioritize user-defined properties
+- Fixed issue with theme application where default theme was incorrectly overriding user themes
+- Enhanced type safety in theme handling
+- Removed legacy styles directory in favor of the new core module structure
+
+### Fixed
+- Fixed issue where tailwindDefaultTheme and other custom themes weren't properly applied
+- Resolved ambiguity in exported animation utilities
+- Improved handling of nested theme properties during theme merging
+
 ## [1.1.0-beta.1] - 2025-03-13
 
 ### Added

@@ -18,4 +18,13 @@ export * from './recaptcha';
 export * from './analytics';
 
 // Export webhook module
-export * from './webhook'; 
+export * from './webhook';
+
+// Export theme module
+export * from './theme';
+
+// Export animations module
+export * from './animations';
+
+// Export adapters module
+export * from './adapters'; 

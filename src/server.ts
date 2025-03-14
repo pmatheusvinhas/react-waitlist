@@ -3,6 +3,10 @@
  * This file is specifically for use with SSR frameworks
  */
 
+// Import and load fonts
+import { loadFonts } from './core/fonts';
+// Note: loadFonts() is not called here as it's a server component
+
 // Export the server component
 export { default as ServerWaitlist } from './components/ServerWaitlist';
 
@@ -24,6 +28,14 @@ export type {
   A11yConfig, 
   FrameworkConfig
 } from './core/types';
+
+// Export themes
+export { 
+  defaultTheme, 
+  tailwindDefaultTheme, 
+  materialUIDefaultTheme,
+  mergeTheme
+} from './core/theme';
 
 // Export ServerWaitlistProps from the component file
 export type { ServerWaitlistProps } from './components/ServerWaitlist'; 

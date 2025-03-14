@@ -1,6 +1,6 @@
 {
   "name": "react-waitlist",
-  "version": "1.1.0-beta.1",
+  "version": "1.1.0-beta.3",
   "description": "A customizable waitlist form component for React applications",
   "type": "module",
   "main": "dist/index.js",

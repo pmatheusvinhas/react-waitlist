@@ -23,10 +23,11 @@ import { trackEvent } from '../core/analytics';
 import { eventBus, WaitlistEventType } from '../core/events';
 import { 
   mergeTheme, 
-  getAnimationStyles, 
-  defaultTheme 
-} from '../styles';
-import { AnimationConfig, defaultAnimation } from '../styles/animations';
+  defaultTheme,
+  tailwindDefaultTheme,
+  materialUIDefaultTheme
+} from '../core/theme';
+import { AnimationConfig, defaultAnimation, getAnimationStyles } from '../core/animations';
 import { AriaProvider, useAria, useAnnounce, useAriaLabels, useReducedMotion } from '../a11y';
 import { useResendAudience, ResendContact } from '../hooks/useResendAudience';
 import { useReCaptcha } from '../hooks/useReCaptcha';
@@ -90,7 +91,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   a11y,
 }) => {
   // Use the updated mergeTheme function that handles both types
-  const theme = mergeTheme(userTheme || defaultTheme);
+  const theme = mergeTheme(userTheme);
   
   // Get accessibility hooks
   const announce = useAnnounce();
