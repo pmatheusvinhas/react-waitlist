@@ -75,6 +75,18 @@ export const useWaitlistEvents = () => {
     });
   }, []);
 
+  /**
+   * Emit a security event
+   */
+  const emitSecurity = useCallback((securityType: string, details: Record<string, any>) => {
+    eventBus.emit({
+      type: 'security',
+      timestamp: new Date().toISOString(),
+      securityType,
+      details,
+    });
+  }, []);
+
   return {
     subscribe,
     subscribeToMany,
@@ -83,5 +95,6 @@ export const useWaitlistEvents = () => {
     emitSubmit,
     emitSuccess,
     emitError,
+    emitSecurity,
   };
 }; 

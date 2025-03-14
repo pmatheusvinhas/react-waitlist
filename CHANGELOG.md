@@ -5,6 +5,112 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1-beta.9] - 2024-03-14
+
+### Fixed
+- Fixed missing export of `createRecaptchaProxy` in server entry point
+- Added proper export of `RecaptchaProxyOptions` interface for better TypeScript support
+- Resolved issue where reCAPTCHA proxy was not accessible in server-side environments
+- Improved server-side module exports for better compatibility with proxy handlers
+
+## [1.1.1-beta.8] - 2024-03-14
+
+### Changed
+- Reduced spacing in Material UI default theme for a more compact form layout
+- Decreased margins between form elements for better visual density
+- Optimized padding values in Material UI components
+- Adjusted font sizes for better proportions in the Material UI default theme
+
+## [1.1.1-beta.7] - 2024-03-14
+
+### Added
+- Clear warning banner in example application about CORS limitations with reCAPTCHA and Resend
+- Link to client-side proxy example repository for proper production implementation
+- Improved error visualization in Event Log and API Calls sections
+
+### Changed
+- Enhanced error styling in example application for better visibility of security failures
+- Updated documentation to clarify expected CORS errors when using direct verification
+
+### Fixed
+- Improved error handling for CORS errors in reCAPTCHA verification
+- Better visual feedback for security check failures in the UI
+
+## [1.1.1-beta.6] - 2024-03-14
+
+### Added
+- Completely redesigned reCAPTCHA implementation to follow Google's official approach
+- Added support for invisible reCAPTCHA with explicit rendering
+- Improved callback handling for reCAPTCHA tokens
+
+### Changed
+- Refactored security event emission to ensure all events are properly logged
+- Enhanced debugging output for security events
+- Updated example application with better event logging
+
+### Fixed
+- Fixed critical issue with null tokens in reCAPTCHA implementation
+- Resolved issue where security events weren't appearing in the Event Log
+- Improved reliability of reCAPTCHA in client-side environments
+
+## [1.1.1-beta.4] - 2024-03-14
+
+### Changed
+- Modified reCAPTCHA verification to allow using the secret key on the client-side (with warning)
+- Improved error handling for reCAPTCHA token execution and verification
+- Enhanced diagnostic logging for reCAPTCHA issues, especially for null tokens
+- Added more detailed security events for better debugging of reCAPTCHA problems
+
+### Fixed
+- Fixed issue where client-side verification with secret key was being blocked
+- Improved handling of null tokens from reCAPTCHA execution
+- Added graceful fallback when no verification method is available
+- Enhanced error reporting with more context about the reCAPTCHA state
+
+## [1.1.1-beta.3] - 2024-03-14
+
+### Added
+- Added `onSecurityEvent` callback to WaitlistProps for handling security events
+- Added `recaptchaProxyEndpoint` property to SecurityConfig for verifying reCAPTCHA tokens via proxy
+- Added `reCaptchaSecretKey` property to SecurityConfig for server-side verification
+- Enhanced security event logging with detailed information in the Event Log
+- Added support for all three reCAPTCHA verification scenarios: client-side, proxy, and server-side
+
+### Fixed
+- Fixed reCAPTCHA implementation to properly handle token verification
+- Improved error handling for reCAPTCHA script loading and execution
+- Enhanced reCAPTCHA proxy implementation with better error reporting
+- Fixed CORS issues in reCAPTCHA verification by adding proper headers
+- Improved SSR compatibility for reCAPTCHA
+
+## [1.1.1-beta.2] - 2024-03-14
+
+### Fixed
+- Improved reCAPTCHA error handling to properly detect and report null tokens
+- Enhanced security event logging with additional console output for debugging
+- Fixed issue where security check failures were silently treated as success
+- Added proper error messages for security verification failures
+- Improved user feedback when security checks fail
+
+## [1.1.1-beta.1] - 2024-03-14
+
+### Fixed
+- Fixed typing issue in the EventBus emit method
+- Added proper support for reCAPTCHA token in the metadata object
+- Fixed usage of loadingText and spinner properties in the theme
+- Updated ThemeConfig interface to include new style properties
+
+## [1.1.1-beta.1] - 2024-03-14
+
+### Added
+- Enhanced logging for security features (honeypot, submission time check, reCAPTCHA)
+- Added detailed security events to the Event Log for better debugging
+- Improved SSR compatibility for all security features
+
+### Changed
+- Refactored reCAPTCHA module to better handle server-side rendering
+- Added `minSubmissionTime` property to SecurityConfig interface with documentation
+
 ## [1.1.0-beta.9] - 2025-03-14
 
 ### Fixed

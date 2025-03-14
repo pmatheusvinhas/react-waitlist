@@ -15,6 +15,8 @@ export { createResendProxy } from './server/proxy';
 export type { ResendProxyConfig } from './server/proxy';
 export { createWebhookProxy } from './server/webhookProxy';
 export type { WebhookProxyConfig } from './server/webhookProxy';
+export { createRecaptchaProxy } from './server/recaptchaProxy';
+export type { RecaptchaProxyOptions } from './server/recaptchaProxy';
 
 // Export types needed for the server component
 export type { 

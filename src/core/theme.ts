@@ -418,11 +418,11 @@ export const materialUIDefaultTheme: ThemeConfig = {
     },
   },
   spacing: {
-    xs: '0.5rem', // 8px
-    sm: '1rem', // 16px
-    md: '1.5rem', // 24px
-    lg: '2rem', // 32px
-    xl: '3rem', // 48px
+    xs: '0.25rem', // 4px
+    sm: '0.5rem',  // 8px
+    md: '1rem',    // 16px
+    lg: '1.5rem',  // 24px
+    xl: '2rem',    // 32px
   },
   borders: {
     radius: {
@@ -435,32 +435,32 @@ export const materialUIDefaultTheme: ThemeConfig = {
   // Component-specific styling for Material UI
   components: {
     container: {
-      padding: '2rem',
+      padding: '1.5rem',
       borderRadius: '0.25rem',
       backgroundColor: '#FFFFFF',
       boxShadow: '0px 3px 5px -1px rgba(0,0,0,0.2), 0px 6px 10px 0px rgba(0,0,0,0.14), 0px 1px 18px 0px rgba(0,0,0,0.12)',
     },
     title: {
-      fontSize: '1.75rem',
+      fontSize: '1.5rem',
       fontWeight: 500,
       color: '#212121',
-      marginBottom: '1rem',
+      marginBottom: '0.75rem',
       letterSpacing: '0.0075em',
     },
     description: {
       fontSize: '1rem',
       color: '#616161',
-      marginBottom: '2rem',
+      marginBottom: '1.25rem',
       lineHeight: 1.6,
       letterSpacing: '0.00938em',
     },
     form: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '2rem',
+      gap: '1rem',
     },
     fieldContainer: {
-      marginBottom: '2rem',
+      marginBottom: '1rem',
       position: 'relative',
     },
     label: {
@@ -468,13 +468,13 @@ export const materialUIDefaultTheme: ThemeConfig = {
       fontSize: '0.75rem',
       fontWeight: 400,
       color: '#9C27B0',
-      marginBottom: '0.5rem',
+      marginBottom: '0.25rem',
       letterSpacing: '0.00938em',
       transition: 'color 0.2s ease',
     },
     input: {
       width: '100%',
-      padding: '1rem 0.75rem',
+      padding: '0.75rem 0.75rem',
       fontSize: '1rem',
       lineHeight: 1.5,
       color: '#212121',
@@ -491,11 +491,11 @@ export const materialUIDefaultTheme: ThemeConfig = {
     checkboxContainer: {
       display: 'flex',
       alignItems: 'center',
-      gap: '0.75rem',
+      gap: '0.5rem',
     },
     checkbox: {
-      width: '1.5rem',
-      height: '1.5rem',
+      width: '1.25rem',
+      height: '1.25rem',
       borderRadius: '0.125rem',
     },
     checkboxLabel: {
@@ -507,7 +507,7 @@ export const materialUIDefaultTheme: ThemeConfig = {
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '0.75rem 2rem',
+      padding: '0.625rem 1.5rem',
       fontSize: '0.875rem',
       fontWeight: 500,
       lineHeight: 1.75,
@@ -532,8 +532,8 @@ export const materialUIDefaultTheme: ThemeConfig = {
       letterSpacing: '0.03333em',
     },
     formError: {
-      padding: '1rem',
-      marginBottom: '1.5rem',
+      padding: '0.75rem',
+      marginBottom: '1rem',
       fontSize: '0.875rem',
       color: '#D32F2F',
       backgroundColor: 'rgba(211, 47, 47, 0.08)',
@@ -547,13 +547,13 @@ export const materialUIDefaultTheme: ThemeConfig = {
     },
     successContainer: {
       textAlign: 'center',
-      padding: '3rem 2rem',
+      padding: '2rem 1.5rem',
     },
     successTitle: {
-      fontSize: '1.75rem',
+      fontSize: '1.5rem',
       fontWeight: 500,
       color: '#388E3C',
-      marginBottom: '1.5rem',
+      marginBottom: '1rem',
       letterSpacing: '0.0075em',
     },
     successDescription: {

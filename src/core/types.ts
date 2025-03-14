@@ -124,6 +124,8 @@ export interface ThemeConfig {
     formError?: React.CSSProperties;
     button?: React.CSSProperties;
     buttonLoading?: React.CSSProperties;
+    loadingText?: React.CSSProperties;
+    spinner?: React.CSSProperties;
     successContainer?: React.CSSProperties;
     successTitle?: React.CSSProperties;
     successDescription?: React.CSSProperties;
@@ -135,17 +137,51 @@ export interface ThemeConfig {
 }
 
 /**
- * Security configuration
+ * Security configuration for the waitlist form
  */
 export interface SecurityConfig {
-  /** Enable honeypot field to detect bots */
+  /**
+   * Enable honeypot field to detect bots
+   */
   enableHoneypot?: boolean;
-  /** Check submission time to detect bots */
+  
+  /**
+   * Check submission time to detect bots
+   */
   checkSubmissionTime?: boolean;
-  /** Enable reCAPTCHA */
+  
+  /**
+   * Minimum time in milliseconds that should elapse between form load and submission
+   * Used to detect bot submissions that happen too quickly
+   * Default: 3000 (3 seconds)
+   */
+  minSubmissionTime?: number;
+  
+  /**
+   * Enable Google reCAPTCHA v3
+   */
   enableReCaptcha?: boolean;
-  /** reCAPTCHA site key */
+  
+  /**
+   * Google reCAPTCHA v3 site key
+   * This is the public key that can be safely used in client-side code
+   */
   reCaptchaSiteKey?: string;
+  
+  /**
+   * Google reCAPTCHA v3 secret key
+   * WARNING: This should ONLY be used in server-side code (SSR)
+   * Never expose this key in client-side code
+   */
+  reCaptchaSecretKey?: string;
+  
+  /**
+   * Endpoint for reCAPTCHA verification via proxy
+   * Used to verify reCAPTCHA tokens without exposing the secret key
+   * Required for client-side verification
+   * Example: '/api/recaptcha-verify'
+   */
+  recaptchaProxyEndpoint?: string;
 }
 
 /**
@@ -279,6 +315,8 @@ export interface WaitlistProps {
   onSuccess?: (data: { timestamp: string; formData: Record<string, any>; response: any }) => Promise<{ success: boolean; error?: string }>;
   /** Callback when submission fails */
   onError?: (data: { timestamp: string; formData: Record<string, any>; error: Error }) => void;
+  /** Callback for security events */
+  onSecurityEvent?: (data: { timestamp: string; securityType: string; details: Record<string, any> }) => void;
   /** Additional class name */
   className?: string;
   /** Additional inline styles */

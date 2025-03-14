@@ -1,7 +1,7 @@
 /**
  * Types of events that can be emitted by the waitlist component
  */
-export type WaitlistEventType = 'field_focus' | 'submit' | 'success' | 'error';
+export type WaitlistEventType = 'field_focus' | 'submit' | 'success' | 'error' | 'security';
 
 /**
  * Data structure for events
@@ -22,6 +22,10 @@ export interface WaitlistEventData {
     message: string;
     code?: string;
   };
+  /** Security type (for security events) */
+  securityType?: string;
+  /** Security details (for security events) */
+  details?: Record<string, any>;
 }
 
 /**
@@ -38,6 +42,7 @@ export class EventBus {
     submit: [],
     success: [],
     error: [],
+    security: [],
   };
 
   /**

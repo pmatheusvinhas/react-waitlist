@@ -31,6 +31,8 @@ import { AriaProvider, useAria, useAnnounce, useAriaLabels, useReducedMotion } f
 import { useResendAudience, ResendContact } from '../hooks/useResendAudience';
 import { useReCaptcha } from '../hooks/useReCaptcha';
 import { useWaitlistEvents } from '../hooks/useWaitlistEvents';
+import { executeReCaptcha, loadReCaptchaScript } from '../core/recaptcha';
+import { verifyReCaptchaToken } from '../core/recaptcha';
 
 /**
  * Default fields for the waitlist form
@@ -55,6 +57,15 @@ type FormState = 'idle' | 'submitting' | 'success' | 'error';
  */
 interface ExtendedField extends Field {
   checkboxLabel?: string;
+}
+
+/**
+ * Update SecurityConfig interface to include minSubmissionTime
+ */
+declare module '../core/types' {
+  interface SecurityConfig {
+    minSubmissionTime?: number;
+  }
 }
 
 /**
@@ -85,6 +96,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   onSubmit,
   onSuccess,
   onError,
+  onSecurityEvent,
   className,
   style,
   a11y,
@@ -134,21 +146,46 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   // Initialize event system
   const waitlistEvents = useWaitlistEvents();
   
+  // Security-related state
+  const [submissionStartTime, setSubmissionStartTime] = useState<number | null>(null);
+  const [reCaptchaToken, setReCaptchaToken] = useState<string | null>(null);
+  const [securityChecksInProgress, setSecurityChecksInProgress] = useState(false);
+  
+  // Add a new function to emit security events
+  const emitSecurityEvent = (type: string, details: Record<string, any>) => {
+    // Emit a custom event for security features
+    waitlistEvents.emitSecurity(type, details);
+    
+    // Call onSecurityEvent callback if provided
+    if (onSecurityEvent) {
+      onSecurityEvent({
+        timestamp: new Date().toISOString(),
+        securityType: type,
+        details
+      });
+    }
+    
+    // Also log to console in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.info(`Security event [${type}]:`, details);
+    }
+  };
+  
   // Initialize form values from default values
   useEffect(() => {
     // Only initialize if we haven't already
     if (Object.keys(formValuesRef.current).length === 0) {
-      const initialValues: Record<string, string | boolean> = {};
+    const initialValues: Record<string, string | boolean> = {};
       
-      fields.forEach((field) => {
+    fields.forEach((field) => {
         if (field.type === 'checkbox') {
           initialValues[field.name] = field.defaultValue === true;
         } else if (field.defaultValue !== undefined) {
           initialValues[field.name] = field.defaultValue as string;
-        } else {
-          initialValues[field.name] = '';
-        }
-      });
+      } else {
+        initialValues[field.name] = '';
+      }
+    });
       
       // Set both the ref and state to the same initial values
       formValuesRef.current = { ...initialValues };
@@ -198,92 +235,122 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
     }
   };
   
+  // Initialize reCAPTCHA if enabled
+  useEffect(() => {
+    if (isReCaptchaEnabled(security)) {
+      const siteKey = security?.reCaptchaSiteKey || '';
+      waitlistEvents.emitSecurity('recaptcha_init', { siteKey: siteKey.substring(0, 5) + '...' });
+      
+      loadReCaptchaScript(siteKey)
+        .then(() => {
+          waitlistEvents.emitSecurity('recaptcha_loaded', { success: true });
+        })
+        .catch((error) => {
+          waitlistEvents.emitSecurity('recaptcha_loaded', { 
+            success: false, 
+            error: error.message || 'Failed to load reCAPTCHA' 
+          });
+        });
+    }
+  }, [security, waitlistEvents]);
+  
+  // Set submission start time when form is first interacted with
+  useEffect(() => {
+    if (security?.checkSubmissionTime && !submissionStartTime) {
+      const handleFirstInteraction = () => {
+        const startTime = Date.now();
+        setSubmissionStartTime(startTime);
+        waitlistEvents.emitSecurity('submission_time_start', { timestamp: startTime });
+        
+        // Remove event listeners after first interaction
+        document.removeEventListener('mousedown', handleFirstInteraction);
+        document.removeEventListener('keydown', handleFirstInteraction);
+        document.removeEventListener('touchstart', handleFirstInteraction);
+      };
+      
+      document.addEventListener('mousedown', handleFirstInteraction);
+      document.addEventListener('keydown', handleFirstInteraction);
+      document.addEventListener('touchstart', handleFirstInteraction);
+      
+      return () => {
+        document.removeEventListener('mousedown', handleFirstInteraction);
+        document.removeEventListener('keydown', handleFirstInteraction);
+        document.removeEventListener('touchstart', handleFirstInteraction);
+      };
+    }
+  }, [security?.checkSubmissionTime, submissionStartTime, waitlistEvents]);
+  
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Don't allow multiple submissions
     if (isSubmitting) return;
     
-    // Set submitting state at the beginning
     setIsSubmitting(true);
-    
-    // Reset form error
-    setFormError(null);
-    
-    // Ensure we're using the latest values by combining state and ref
-    const currentFormValues = { ...formValues };
-    
-    // Check for honeypot (bot detection)
-    if (security.enableHoneypot) {
-      const honeypotValue = (e.target as any)[honeypotFieldName.current]?.value;
-      if (honeypotValue) {
-        console.warn('Honeypot triggered, likely bot submission');
-        setFormError('Something went wrong. Please try again later.');
-        setIsSubmitting(false);
-        return;
-      }
-    }
-    
-    // Check submission time (bot detection)
-    if (security.checkSubmissionTime) {
-      const submissionTime = Date.now();
-      const timeElapsed = submissionTime - formLoadTime.current;
-      const honeypotValue = (e.target as any)[honeypotFieldName.current]?.value;
-    
-      const botCheck = isLikelyBot(honeypotValue, formLoadTime.current);
-      if (botCheck.isBot) {
-        console.warn('Submission time check triggered, likely bot submission. Reason:', botCheck.reason);
-        setFormError('Something went wrong. Please try again later.');
-        setIsSubmitting(false);
-        return;
-      }
-    }
-    
-    // Validate form
-    const validation = validateForm(currentFormValues, fields);
-    setValidationErrors(validation);
-    
-    if (!isFormValid(validation)) {
-      setIsSubmitting(false);
-      return;
-    }
-    
-    // Execute reCAPTCHA if enabled
-    if (reCaptchaEnabled && reCaptcha && reCaptcha.isLoaded) {
-      try {
-        await reCaptcha.executeReCaptcha();
-      } catch (error) {
-        console.error('reCAPTCHA error:', error);
-        setFormError('Error verifying reCAPTCHA. Please try again.');
-        setIsSubmitting(false);
-        return;
-      }
-    }
-    
-    // Set form state to submitting
-    setFormState('submitting');
-    
-    // Prepare submission data
-    const submissionData = {
-      timestamp: new Date().toISOString(),
-      formData: { ...currentFormValues },
-    };
-    
-    // Emit submit event
-    waitlistEvents.emitSubmit(submissionData.formData);
-    
-    // Call onSubmit callback if provided
-    if (onSubmit) {
-      onSubmit(submissionData);
-    }
+    waitlistEvents.emitSubmit(formValues);
     
     try {
-      // Handle form submission with onSuccess callback
+      // Run security checks
+      const securityChecksPassed = await runSecurityChecks();
+      if (!securityChecksPassed) {
+        // If security checks failed, show an error instead of silently pretending success
+        console.error('Form submission: Security checks failed');
+        setFormState('error');
+        setFormError('Security verification failed. Please try again.');
+        
+        // Emit error event for security check failure
+        waitlistEvents.emitError(
+          formValues, 
+          new Error('Security verification failed')
+        );
+        
+        // Call onError callback if provided
+        if (onError) {
+          onError({
+        timestamp: new Date().toISOString(),
+            formData: formValues,
+            error: new Error('Security verification failed'),
+          });
+        }
+        
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Ensure we're using the latest values by combining state and ref
+      const currentFormValues = { ...formValues };
+      
+      // Prepare submission data with the correct structure
+      const submissionData = {
+        timestamp: new Date().toISOString(),
+        formData: currentFormValues,
+        metadata: {
+          source: window.location.href,
+          referrer: document.referrer || 'direct',
+          userAgent: navigator.userAgent,
+          reCaptchaToken: null as string | null,
+        },
+      };
+      
+      // Add reCAPTCHA token to submission if available
+      if (reCaptchaToken) {
+        submissionData.metadata.reCaptchaToken = reCaptchaToken;
+      }
+      
+      // Call onSubmit with the correct data structure
+      if (onSubmit) {
+        onSubmit({
+          timestamp: submissionData.timestamp,
+          formData: submissionData.formData
+        });
+      }
+      
+      // Call onSuccess with the correct data structure
       if (onSuccess) {
         const result = await onSuccess({
-          ...submissionData,
-          response: null,
+          timestamp: submissionData.timestamp,
+          formData: submissionData.formData,
+          response: null
         });
         
         // If result is returned and success is true, show success message
@@ -347,23 +414,35 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
       setFormState('error');
       setFormError('Something went wrong. Please try again.');
       
-      // Emit error event
-      waitlistEvents.emitError(submissionData.formData, error as Error);
+      // Create a basic submission data object for error reporting
+      const errorData = {
+        timestamp: new Date().toISOString(),
+        formData: formValues,
+        error: error instanceof Error ? {
+          message: error.message,
+          code: (error as any).code
+        } : {
+          message: String(error),
+        }
+      };
+      
+      // Emit error event with the correct structure
+      waitlistEvents.emitError(errorData.formData, error instanceof Error ? error : new Error(String(error)));
       
       // Call onError callback if provided
       if (onError) {
         onError({
-          timestamp: new Date().toISOString(),
-          formData: submissionData.formData,
-          error: error as Error,
+          timestamp: errorData.timestamp,
+          formData: errorData.formData,
+          error: error instanceof Error ? error : new Error(String(error)),
         });
       }
       
       // Announce error to screen readers
       if (announce) {
-        announce('Form submission failed: ' + (error as Error).message);
+        announce('Form submission failed: ' + (error instanceof Error ? error.message : String(error)));
       }
-    } finally {
+      
       setIsSubmitting(false);
     }
   };
@@ -447,6 +526,221 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
         );
       default:
         return null;
+    }
+  };
+  
+  // Check honeypot field
+  const checkHoneypot = (): boolean => {
+    if (!security?.enableHoneypot) return true;
+    
+    const honeypotValue = formValues[honeypotFieldName.current] as string || '';
+    const isHoneypotEmpty = honeypotValue.trim() === '';
+    
+    // Emit security event for honeypot check
+    emitSecurityEvent('honeypot', { 
+      passed: isHoneypotEmpty,
+      value: honeypotValue ? 'filled' : 'empty'
+    });
+    
+    return isHoneypotEmpty;
+  };
+  
+  // Check submission time
+  const checkSubmissionTime = (): boolean => {
+    if (!security?.checkSubmissionTime || !submissionStartTime) return true;
+    
+    const submissionEndTime = Date.now();
+    const submissionDuration = submissionEndTime - submissionStartTime;
+    const minSubmissionTime = security.minSubmissionTime || 3000; // Default 3 seconds
+    const isSubmissionTimeValid = submissionDuration >= minSubmissionTime;
+    
+    // Emit security event for submission time check
+    emitSecurityEvent('submission_time', {
+      passed: isSubmissionTimeValid,
+      duration: submissionDuration,
+      minRequired: minSubmissionTime
+    });
+    
+    return isSubmissionTimeValid;
+  };
+  
+  // Execute reCAPTCHA
+  const executeReCaptchaCheck = async (): Promise<boolean> => {
+    if (!isReCaptchaEnabled(security)) return true;
+    
+    const siteKey = security?.reCaptchaSiteKey || '';
+    
+    try {
+      // Log the start of reCAPTCHA execution
+      console.info('Security check: Starting reCAPTCHA execution');
+      
+      // Emit security event for reCAPTCHA execution start
+      emitSecurityEvent('recaptcha_execute', { 
+        action: 'submit_waitlist',
+        siteKey: siteKey.substring(0, 5) + '...' // Only show part of the key for security
+      });
+      
+      // Execute reCAPTCHA
+      let token;
+      try {
+        token = await executeReCaptcha(siteKey, 'submit_waitlist');
+        
+        // Check if token is null or empty
+        if (!token) {
+          console.error('Security check: reCAPTCHA returned null or empty token');
+          emitSecurityEvent('recaptcha_token_error', { 
+            error: 'Null or empty token received'
+          });
+          return false;
+        }
+      } catch (tokenError) {
+        console.error('Security check: reCAPTCHA execution error -', 
+          tokenError instanceof Error ? tokenError.message : String(tokenError));
+        
+        emitSecurityEvent('recaptcha_execution_error', { 
+          error: tokenError instanceof Error ? tokenError.message : String(tokenError)
+        });
+        
+        return false;
+      }
+      
+      setReCaptchaToken(token);
+      
+      // Log successful reCAPTCHA execution
+      console.info(`Security check: reCAPTCHA successful, token length: ${token.length}`);
+      
+      // Emit security event for successful reCAPTCHA execution
+      emitSecurityEvent('recaptcha_success', { 
+        tokenLength: token.length,
+        tokenPreview: token.substring(0, 10) + '...'
+      });
+      
+      // Verify the token - this will automatically use the appropriate method
+      // based on the environment and available configuration
+      try {
+        const verificationMethod = security.recaptchaProxyEndpoint 
+          ? 'proxy' 
+          : (security.reCaptchaSecretKey ? 'direct' : 'none');
+        
+        emitSecurityEvent('recaptcha_verify', { 
+          method: verificationMethod,
+          hasSecretKey: !!security.reCaptchaSecretKey,
+          hasProxyEndpoint: !!security.recaptchaProxyEndpoint
+        });
+        
+        // If no verification method is available, log a warning but don't fail
+        if (verificationMethod === 'none') {
+          console.warn('Security check: No reCAPTCHA verification method available (secretKey or proxyEndpoint)');
+          emitSecurityEvent('recaptcha_verify_warning', {
+            warning: 'No verification method available',
+            recommendation: 'Configure recaptchaProxyEndpoint for client-side or reCaptchaSecretKey for server-side'
+          });
+          // Continue with submission despite no verification
+          return true;
+        }
+        
+        const verificationResult = await verifyReCaptchaToken(
+          token,
+          security.reCaptchaSecretKey, // Will be used if provided
+          security.recaptchaProxyEndpoint,
+          'submit_waitlist',
+          0.5 // Default minimum score
+        );
+        
+        if (!verificationResult.valid) {
+          emitSecurityEvent('recaptcha_verify_failed', { 
+            error: verificationResult.error,
+            score: verificationResult.score
+          });
+          
+          console.error('Security check: reCAPTCHA verification failed -', verificationResult.error);
+          return false;
+        }
+        
+        emitSecurityEvent('recaptcha_verify_success', { 
+          score: verificationResult.score
+        });
+        
+        console.info(`Security check: reCAPTCHA verification successful, score: ${verificationResult.score}`);
+        return true;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        
+        emitSecurityEvent('recaptcha_verify_error', { 
+          error: errorMessage
+        });
+        
+        console.error('Security check: reCAPTCHA verification request failed -', errorMessage);
+        return false;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Log reCAPTCHA failure
+      console.error('Security check: reCAPTCHA failed -', errorMessage);
+      
+      // Emit security event for reCAPTCHA failure
+      emitSecurityEvent('recaptcha_error', { 
+        error: errorMessage
+      });
+      
+      // Return false to indicate failure
+      return false;
+    }
+  };
+  
+  // Run all security checks
+  const runSecurityChecks = async (): Promise<boolean> => {
+    setSecurityChecksInProgress(true);
+    console.info('Security checks: Starting security validation');
+    
+    // Emit security event for starting security checks
+    emitSecurityEvent('security_checks_start', {
+      enabledChecks: {
+        honeypot: !!security?.enableHoneypot,
+        submissionTime: !!security?.checkSubmissionTime,
+        reCaptcha: isReCaptchaEnabled(security)
+      }
+    });
+    
+    try {
+      // Check honeypot
+      const honeypotPassed = checkHoneypot();
+      console.info(`Security checks: Honeypot check ${honeypotPassed ? 'passed' : 'failed'}`);
+      if (!honeypotPassed) {
+        emitSecurityEvent('security_check_failed', { reason: 'honeypot' });
+        return false;
+      }
+      
+      // Check submission time
+      const submissionTimePassed = checkSubmissionTime();
+      console.info(`Security checks: Submission time check ${submissionTimePassed ? 'passed' : 'failed'}`);
+      if (!submissionTimePassed) {
+        emitSecurityEvent('security_check_failed', { reason: 'submission_time' });
+        return false;
+      }
+      
+      // Check reCAPTCHA
+      const reCaptchaPassed = await executeReCaptchaCheck();
+      console.info(`Security checks: reCAPTCHA check ${reCaptchaPassed ? 'passed' : 'failed'}`);
+      if (!reCaptchaPassed) {
+        emitSecurityEvent('security_check_failed', { reason: 'recaptcha' });
+        return false;
+      }
+      
+      // All checks passed
+      console.info('Security checks: All security checks passed');
+      
+      // Emit security event for all checks passed
+      emitSecurityEvent('security_checks_passed', { 
+        honeypot: honeypotPassed,
+        submissionTime: submissionTimePassed,
+        reCaptcha: reCaptchaPassed
+      });
+      
+      return true;
+    } finally {
+      setSecurityChecksInProgress(false);
     }
   };
   
@@ -563,15 +857,24 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
         {/* Submit button */}
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || securityChecksInProgress}
           style={{
             ...(theme.components?.button || {}),
             ...(isSubmitting ? (theme.components?.buttonLoading || {}) : {}),
           }}
           aria-label={ariaLabels.submitButton || 'Join the waitlist'}
-          aria-busy={isSubmitting}
+          aria-busy={isSubmitting || securityChecksInProgress}
         >
-          {isSubmitting ? 'Submitting...' : submitText}
+          {isSubmitting || securityChecksInProgress ? (
+            <>
+              <span style={theme.components?.loadingText || {}}>
+                {submitText || 'Join Waitlist'}
+              </span>
+              <div style={theme.components?.spinner || {}} />
+            </>
+          ) : (
+            submitText || 'Join Waitlist'
+          )}
         </button>
       </form>
     </div>
