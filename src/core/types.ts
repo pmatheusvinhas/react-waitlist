@@ -149,20 +149,16 @@ export interface SecurityConfig {
 }
 
 /**
- * Analytics configuration
+ * Analytics configuration (stub)
+ * This is a placeholder to maintain compatibility with existing code
  */
 export interface AnalyticsConfig {
-  /** Whether to enable analytics */
+  /** Whether to enable analytics (always false) */
   enabled?: boolean;
-  /** Events to track */
+  /** Placeholder for events to track */
   trackEvents?: WaitlistEventType[];
-  /** Integration with analytics tools */
-  integrations?: {
-    googleAnalytics?: boolean;
-    mixpanel?: string;
-    posthog?: string;
-    [key: string]: boolean | string | undefined;
-  };
+  /** Placeholder for integrations */
+  integrations?: Record<string, any>;
 }
 
 /**

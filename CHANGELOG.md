@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0-beta.9] - 2025-03-14
+
+### Fixed
+- Completely redesigned form state management to fix persistent issue with form values being lost
+- Added state-reference synchronization to ensure values are properly retained between fields
+- Implemented bidirectional sync between state and reference to prevent data loss
+- Optimized form value updates using functional state updates for improved reliability
+- Fixed issue where form values were not properly persisted during navigation between fields
+
+## [1.1.0-beta.8] - 2025-03-14
+
+### Fixed
+- Fixed critical issue where form field values were lost when navigating between fields
+- Implemented reference system to ensure form values persist during re-rendering
+- Improved form state management to prevent data loss during user interaction
+- Optimized state update flow to ensure consistency between form fields
+
+## [1.1.0-beta.7] - 2025-03-14
+
+### Fixed
+- Removed unnecessary event emissions that were interfering with normal form behavior
+- Added debug logging to help troubleshoot form value updates
+- Fixed order of conditions in package.json exports to ensure TypeScript types are properly resolved
+
+## [1.1.0-beta.6] - 2025-03-14
+
+### Fixed
+- Fixed critical issue in the form submission process that caused the form to be cleared without registering events
+- Improved submission state management (isSubmitting) to prevent inconsistent states
+- Fixed submission button logic to allow multiple submission attempts
+- Added proper error handling during form validation
+
+## [1.1.0-beta.5] - 2025-03-14
+
+### Fixed
+- Removed reference to analytics module in core/index.ts
+- Cleaned up legacy type definition files from dist/styles directory
+- Fixed package.json repository URL
+
+## [1.1.0-beta.4] - 2025-03-14
+
+### Changed
+- Completely removed analytics integration
+
+### Fixed
+- Fixed issue with onFieldFocus callback preventing typing in form fields
+- Resolved event duplication in form input handling
+- Improved form field interaction by removing redundant event emissions
+
 ## [1.1.0-beta.3] - 2025-03-14
 
 ### Added
@@ -99,72 +148,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - True server-side rendering (SSR) support for Next.js App Router and similar frameworks
-- New `ClientWaitlist` component for hydrating server-rendered forms
-- Improved architecture documentation for SSR implementation
-
-### Changed
-- Refactored `ServerWaitlist` to be a genuine server component without client-side dependencies
-- Updated examples to demonstrate the new SSR architecture
-- Improved documentation to reflect the new component architecture
-
-### Fixed
-- Fixed issues with React hooks being used in server components
-- Resolved compatibility issues with Next.js 15 server components
-
-## [0.1.4-beta.1] - 2025-03-10
-
-### Added
-- Google reCAPTCHA v3 integration for enhanced bot protection
-- New `useReCaptcha` hook for managing reCAPTCHA
-- reCAPTCHA proxy endpoint for secure token verification
-- Documentation and examples for reCAPTCHA integration
-
-### Changed
-- Expanded security options with reCAPTCHA configuration
-- Updated documentation to reflect new security features
-
-### Fixed
-- Improved error handling for reCAPTCHA verification
-
-## [0.1.3-beta.1] - 2025-03-10
-
-### Added
-- Centralized event system for handling analytics and webhooks
-- New `useWaitlistEvents` hook for subscribing to events
-- Webhook proxy for secure webhook delivery
-- Comprehensive documentation for the events system
-- Examples demonstrating event usage
-
-### Changed
-- Improved naming consistency with `resendAudienceId` and `resendProxyEndpoint`
-- Made Resend integration truly optional
-- Enhanced security with warnings for sensitive information in webhooks
-- Updated documentation to reflect new features and best practices
-
-### Fixed
-- Fixed inconsistent component naming across the codebase
-- Addressed potential security issues with webhook headers
-
-## [0.1.2-beta.1] - 2025-03-10
-
-### Added
-- Webhook support for integration with external systems
-- Documentation for webhook configuration and usage
-- Examples of webhook integration with popular services
-
-## [0.1.1-beta.1] - 2025-03-10
-
-### Changed
-- Integrated with official Resend SDK instead of direct API calls
-- Improved error handling and response parsing
-
-## [0.1.0-beta.1] - 2025-03-10
-
-### Added
-- Initial public beta release
-- Core waitlist form functionality
-- Integration with Resend audiences
-- Customizable UI with theming support
-- Accessibility features
-- Bot and spam protection
-- Analytics tracking 
+- New `

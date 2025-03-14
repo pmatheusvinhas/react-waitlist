@@ -14,8 +14,8 @@ export * from './security';
 // Export recaptcha module
 export * from './recaptcha';
 
-// Export analytics module
-export * from './analytics';
+// Export analytics module - removed
+// export * from './analytics';
 
 // Export webhook module
 export * from './webhook';

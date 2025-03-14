@@ -1,6 +1,6 @@
 {
   "name": "react-waitlist",
-  "version": "1.1.0-beta.3",
+  "version": "1.1.0-beta.9",
   "description": "A customizable waitlist form component for React applications",
   "type": "module",
   "main": "dist/index.js",
@@ -8,19 +8,19 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.esm.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     },
     "./server": {
+      "types": "./dist/server.d.ts",
       "import": "./dist/server.esm.js",
-      "require": "./dist/server.js",
-      "types": "./dist/server.d.ts"
+      "require": "./dist/server.js"
     },
     "./client": {
+      "types": "./dist/client.d.ts",
       "import": "./dist/client.esm.js",
-      "require": "./dist/client.js",
-      "types": "./dist/client.d.ts"
+      "require": "./dist/client.js"
     }
   },
   "files": [
@@ -110,7 +110,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pmatheusvinhas/react-waitlist"
+    "url": "git+https://github.com/pmatheusvinhas/react-waitlist.git"
   },
   "bugs": {
     "url": "https://github.com/pmatheusvinhas/react-waitlist/issues"

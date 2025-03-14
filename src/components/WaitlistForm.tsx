@@ -19,7 +19,6 @@ import {
   getHoneypotStyles, 
   isReCaptchaEnabled 
 } from '../core/security';
-import { trackEvent } from '../core/analytics';
 import { eventBus, WaitlistEventType } from '../core/events';
 import { 
   mergeTheme, 
@@ -123,6 +122,9 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   const [validationErrors, setValidationErrors] = useState<Record<string, { valid: boolean; message?: string }>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Reference to store form values - used to prevent loss during re-renders
+  const formValuesRef = useRef<Record<string, string | boolean>>({});
+  
   // Honeypot field name (for bot detection)
   const honeypotFieldName = useRef(generateHoneypotFieldName());
   
@@ -134,38 +136,38 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
   
   // Initialize form values from default values
   useEffect(() => {
-    const initialValues: Record<string, string | boolean> = {};
-    
-    fields.forEach((field) => {
-      if (field.type === 'checkbox') {
-        initialValues[field.name] = field.defaultValue === true;
-      } else if (field.defaultValue !== undefined) {
-        initialValues[field.name] = field.defaultValue as string;
-      } else {
-        initialValues[field.name] = '';
-      }
-    });
-    
-    setFormValues(initialValues);
+    // Only initialize if we haven't already
+    if (Object.keys(formValuesRef.current).length === 0) {
+      const initialValues: Record<string, string | boolean> = {};
+      
+      fields.forEach((field) => {
+        if (field.type === 'checkbox') {
+          initialValues[field.name] = field.defaultValue === true;
+        } else if (field.defaultValue !== undefined) {
+          initialValues[field.name] = field.defaultValue as string;
+        } else {
+          initialValues[field.name] = '';
+        }
+      });
+      
+      // Set both the ref and state to the same initial values
+      formValuesRef.current = { ...initialValues };
+      setFormValues({ ...initialValues });
+    }
   }, [fields]);
   
-  // Track view event on component mount
+  // Sync formValues with formValuesRef whenever formValues changes
+  // This ensures our ref always has the latest values
   useEffect(() => {
-    if (analytics?.enabled) {
-      // Emit view event through the event bus
-      waitlistEvents.emit({
-        type: 'field_focus',
-        timestamp: new Date().toISOString(),
-      });
+    // Only update if formValues has content (prevents overwriting with empty object)
+    if (Object.keys(formValues).length > 0) {
+      formValuesRef.current = { ...formValues };
     }
-  }, [analytics, waitlistEvents]);
+  }, [formValues]);
   
   // Handle field focus
   const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name } = e.target;
-    
-    // Emit field focus event
-    waitlistEvents.emitFieldFocus(name);
     
     // Call onFieldFocus callback if provided
     if (onFieldFocus) {
@@ -180,10 +182,12 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
       ? (e.target as HTMLInputElement).checked 
       : e.target.value;
     
-    setFormValues((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    // Update state using functional update to ensure we're working with the latest state
+    setFormValues(prevValues => {
+      const newValues = { ...prevValues, [name]: value };
+      console.log('Updated form values:', newValues); // Debug log
+      return newValues;
+    });
     
     // Clear validation error when field is changed
     if (validationErrors[name]) {
@@ -191,14 +195,6 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
         ...prev,
         [name]: { valid: true, message: '' },
       }));
-    }
-    
-    // Emit field focus event
-    waitlistEvents.emitFieldFocus(name);
-    
-    // Call onFieldFocus callback if provided
-    if (onFieldFocus) {
-      onFieldFocus({ field: name, timestamp: new Date().toISOString() });
     }
   };
   
@@ -209,8 +205,14 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
     // Don't allow multiple submissions
     if (isSubmitting) return;
     
+    // Set submitting state at the beginning
+    setIsSubmitting(true);
+    
     // Reset form error
     setFormError(null);
+    
+    // Ensure we're using the latest values by combining state and ref
+    const currentFormValues = { ...formValues };
     
     // Check for honeypot (bot detection)
     if (security.enableHoneypot) {
@@ -218,6 +220,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
       if (honeypotValue) {
         console.warn('Honeypot triggered, likely bot submission');
         setFormError('Something went wrong. Please try again later.');
+        setIsSubmitting(false);
         return;
       }
     }
@@ -226,19 +229,23 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
     if (security.checkSubmissionTime) {
       const submissionTime = Date.now();
       const timeElapsed = submissionTime - formLoadTime.current;
+      const honeypotValue = (e.target as any)[honeypotFieldName.current]?.value;
     
-      if (isLikelyBot(formValues.honeypot as string, formLoadTime.current)) {
-        console.warn('Submission time check triggered, likely bot submission');
+      const botCheck = isLikelyBot(honeypotValue, formLoadTime.current);
+      if (botCheck.isBot) {
+        console.warn('Submission time check triggered, likely bot submission. Reason:', botCheck.reason);
         setFormError('Something went wrong. Please try again later.');
+        setIsSubmitting(false);
         return;
       }
     }
     
     // Validate form
-    const validation = validateForm(formValues, fields);
+    const validation = validateForm(currentFormValues, fields);
     setValidationErrors(validation);
     
     if (!isFormValid(validation)) {
+      setIsSubmitting(false);
       return;
     }
     
@@ -249,18 +256,18 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
       } catch (error) {
         console.error('reCAPTCHA error:', error);
         setFormError('Error verifying reCAPTCHA. Please try again.');
+        setIsSubmitting(false);
         return;
       }
     }
     
-    // Start submission
-    setIsSubmitting(true);
+    // Set form state to submitting
     setFormState('submitting');
     
     // Prepare submission data
     const submissionData = {
       timestamp: new Date().toISOString(),
-      formData: { ...formValues },
+      formData: { ...currentFormValues },
     };
     
     // Emit submit event
@@ -295,9 +302,9 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
           if (resendAudience && resendAudienceId) {
             try {
               const contact: ResendContact = {
-                email: formValues.email as string,
-                firstName: formValues.firstName as string,
-                lastName: formValues.lastName as string,
+                email: currentFormValues.email as string,
+                firstName: currentFormValues.firstName as string,
+                lastName: currentFormValues.lastName as string,
                 unsubscribed: false,
               };
               
@@ -306,8 +313,8 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
                 const metadata: Record<string, any> = {};
                 
                 resendMapping.metadata.forEach((field) => {
-                  if (formValues[field] !== undefined) {
-                    metadata[field] = formValues[field];
+                  if (currentFormValues[field] !== undefined) {
+                    metadata[field] = currentFormValues[field];
                   }
                 });
                 
@@ -556,7 +563,7 @@ const WaitlistFormInner: React.FC<WaitlistProps> = ({
         {/* Submit button */}
         <button
           type="submit"
-          disabled={isSubmitting || !isFormValid(validationErrors)}
+          disabled={isSubmitting}
           style={{
             ...(theme.components?.button || {}),
             ...(isSubmitting ? (theme.components?.buttonLoading || {}) : {}),

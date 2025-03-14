@@ -3,7 +3,6 @@ import { Field, SecurityConfig, ResendMapping, WebhookConfig, WaitlistEventData 
 import { validateForm, isFormValid } from '../core/validation';
 import { generateHoneypotFieldName, isLikelyBot } from '../core/security';
 import { eventBus } from '../core/events';
-import { trackEvent } from '../core/analytics';
 import { sendWebhooks } from '../core/webhook';
 import { Resend } from 'resend';
 import { useResendAudience, ResendContact } from './useResendAudience';
@@ -179,9 +178,6 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
   
   // Track view event
   useEffect(() => {
-    // Track analytics event
-    trackEvent(analytics, { event: 'field_focus' });
-    
     // Send webhooks
     sendWebhooks(webhooks, 'field_focus', {}, undefined, undefined, webhookProxyEndpoint);
     
@@ -190,7 +186,7 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
       type: 'field_focus',
       timestamp: new Date().toISOString(),
     });
-  }, [analytics, webhooks, webhookProxyEndpoint]);
+  }, [webhooks, webhookProxyEndpoint]);
   
   // Handle input change
   const handleChange = (
@@ -216,14 +212,6 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
         ...result,
       }));
     }
-    
-    // Track focus event (only once per field)
-    if (name === 'email' && !formValues[name]) {
-      trackEvent(analytics, { 
-        event: 'field_focus',
-        properties: { field: name }
-      });
-    }
   };
   
   // Handle form submission
@@ -232,9 +220,6 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
     
     // Set submitting state
     setFormState('submitting');
-    
-    // Track submit event
-    trackEvent(analytics, { event: 'submit', properties: formValues });
     
     // Send webhooks
     sendWebhooks(webhooks, 'submit', formValues, undefined, undefined, webhookProxyEndpoint);
@@ -309,14 +294,6 @@ export const useWaitlistForm = (options: UseWaitlistFormOptions): UseWaitlistFor
         timestamp: new Date().toISOString(),
         formData: { ...formValues },
         response: data,
-      });
-      
-      // Track success event
-      trackEvent(analytics, { 
-        event: 'success',
-        properties: { 
-          email: formValues[resendMapping?.email || 'email'] 
-        }
       });
       
       // Send webhooks
