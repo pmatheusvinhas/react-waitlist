@@ -157,7 +157,7 @@ Explore our example implementations to see React Waitlist in action:
 
 ### Vite with Proxy Example
 
-The [Vite Proxy Example](./examples/vite-proxy) demonstrates the recommended approach for production applications, using proxy endpoints to securely handle API requests without exposing your API keys.
+The [Vite Proxy Example](https://github.com/pmatheusvinhas/react-waitlist-example-client-proxy) demonstrates the recommended approach for production applications, using proxy endpoints to securely handle API requests without exposing your API keys.
 
 Key features:
 - Backend Express server with proxy endpoints
@@ -165,11 +165,11 @@ Key features:
 - CORS protection and error handling
 - Complete implementation of all security features
 
-[View Vite Proxy Example →](./examples/vite-proxy)
+[View Vite Proxy Example →](https://github.com/pmatheusvinhas/react-waitlist-example-client-proxy)
 
 ### Vite Direct Example
 
-The [Vite Direct Example](./examples/vite-direct) demonstrates direct API usage, which is simpler but less secure and only recommended for development or testing.
+The [Vite Direct Example](https://github.com/pmatheusvinhas/react-waitlist-example-client) demonstrates direct API usage, which is simpler but less secure and only recommended for development or testing.
 
 Key features:
 - Direct integration with Resend API
@@ -177,7 +177,7 @@ Key features:
 - Complete event logging system
 - All form fields and customization options
 
-[View Vite Direct Example →](./examples/vite-direct)
+[View Vite Direct Example →](https://github.com/pmatheusvinhas/react-waitlist-example-client)
 
 ## Architecture
 
@@ -203,7 +203,7 @@ graph TD
     O --> R[Webhook Handler]
 ```
 
-For more details, see the [Architecture Documentation](./architecture.md).
+For more details, see the [Architecture Documentation](./docs/architecture.md).
 
 ## Security
 
@@ -262,15 +262,15 @@ createResendProxy({
 })
 ```
 
-For more details, see the [Security Documentation](./security.md).
+For more details, see the [Security Documentation](./docs/security.md).
 
 ## Documentation
 
 Comprehensive documentation is available to help you get the most out of React Waitlist:
 
-- [API Reference](./api.md): Complete API documentation
-- [Architecture](./architecture.md): Details about the component's architecture
-- [Security](./security.md): Security features and best practices
+- [API Reference](./docs/api.md): Complete API documentation
+- [Architecture](./docs/architecture.md): Details about the component's architecture
+- [Security](./docs/security.md): Security features and best practices
 
 ## License
 
