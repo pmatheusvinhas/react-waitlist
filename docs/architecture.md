@@ -63,13 +63,38 @@ graph LR
 - **Types**: TypeScript interfaces and types for the component API
 - **Validation**: Form validation logic
 - **Security**: Bot protection and security measures
-- **Events**: Event handling and custom events
+- **Events**: Event handling and publish-subscribe event bus system
 - **Theme**: Theming and styling utilities
 - **Animations**: Animation utilities
 - **Fonts**: Font loading utilities
 - **Adapters**: Framework adapters for different UI libraries
 - **reCAPTCHA**: Google reCAPTCHA integration
 - **Webhook**: Webhook handling
+
+## Events System
+
+The events system is built on a publish-subscribe (pub/sub) pattern, implemented as an event bus. This architecture allows components to emit events and subscribe to them without tight coupling.
+
+```mermaid
+graph TD
+    A[WaitlistForm] -->|emits| B[EventBus]
+    B -->|notifies| C[onFieldFocus Handler]
+    B -->|notifies| D[onSubmit Handler]
+    B -->|notifies| E[onSuccess Handler]
+    B -->|notifies| F[onError Handler]
+    B -->|notifies| G[onSecurityEvent Handler]
+    B -->|notifies| H[Custom Subscribers]
+    I[useWaitlistEvents] -->|interacts with| B
+```
+
+The event system handles various types of events:
+- Field focus events
+- Form submission events
+- Success events
+- Error events
+- Security-related events
+
+For a detailed explanation of the events system, see the [Events System Documentation](./events.md).
 
 ## Hooks
 
@@ -122,6 +147,7 @@ sequenceDiagram
     participant Form
     participant Validation
     participant Security
+    participant EventBus
     participant ResendHook
     participant RecaptchaHook
     participant Proxy
@@ -129,10 +155,12 @@ sequenceDiagram
     participant reCAPTCHA
 
     User->>Form: Fill form & submit
+    Form->>EventBus: Emit field_focus event
     Form->>Validation: Validate input
     Validation-->>Form: Validation result
     
     alt if valid
+        Form->>EventBus: Emit submit event
         Form->>Security: Check for bots
         Security->>RecaptchaHook: Verify user
         RecaptchaHook->>reCAPTCHA: Get token
@@ -150,15 +178,26 @@ sequenceDiagram
             Resend-->>Proxy: Success/error
             Proxy-->>ResendHook: Success/error
             ResendHook-->>Form: Success/error
-            Form-->>User: Success message
+            
+            alt if success
+                Form->>EventBus: Emit success event
+                EventBus-->>User: Success message
+            else if error
+                Form->>EventBus: Emit error event
+                EventBus-->>User: Error message
+            end
         else if bot
-            Security-->>Form: Bot detected
+            Security->>EventBus: Emit security event
+            EventBus-->>Form: Bot detected
             Form-->>User: Error message
         end
     else if invalid
-        Form-->>User: Validation error
+        Form->>EventBus: Emit error event
+        EventBus-->>User: Validation error
     end
 ```
+
+This diagram illustrates how events are emitted at various points in the data flow process, allowing for extensibility and custom behavior at each step.
 
 ## Configuration Options
 
@@ -219,3 +258,11 @@ graph TD
 ```
 
 This modular design allows for easy maintenance and extension of the component. 
+
+## Related Documentation
+
+For more information on specific aspects of the architecture:
+
+- [API Reference](./api.md): Complete API documentation
+- [Events System](./events.md): Detailed guide to the events system
+- [Security](./security.md): Security features and best practices 

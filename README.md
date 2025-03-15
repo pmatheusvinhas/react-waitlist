@@ -271,6 +271,7 @@ Comprehensive documentation is available to help you get the most out of React W
 - [API Reference](./docs/api.md): Complete API documentation
 - [Architecture](./docs/architecture.md): Details about the component's architecture
 - [Security](./docs/security.md): Security features and best practices
+- [Events System](./docs/events.md): Detailed guide to the events system and integration
 
 ## License
 
