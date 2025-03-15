@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1-beta.11] - 2024-03-15
+
+### Changed
+- Completely redesigned `createResendProxy` implementation for better error handling
+- Added proper detection and reporting of Resend API errors
+- Added debug mode option to `createResendProxy` for detailed logging
+- Improved validation of API keys and request parameters
+
+### Fixed
+- Fixed critical issue where Resend API errors weren't properly reported to clients
+- Added specific handling for restricted API key errors
+- Improved error messages to provide more helpful feedback
+- Enhanced type safety throughout the proxy implementation
+
+## [1.1.1-beta.10] - 2024-03-14
+
+### Changed
+- Removed `allowedAudiences` restriction from Resend proxy to allow client-side audience specification
+- Updated proxy to accept any audience ID from the client for better flexibility
+- Improved error handling and logging in Resend proxy
+
+### Fixed
+- Fixed parameter naming in useResendAudience hook to match proxy expectations (audience_id -> audienceId)
+- Added better validation and error messages in Resend proxy
+- Improved error handling to provide more helpful feedback
+
 ## [1.1.1-beta.9] - 2024-03-14
 
 ### Fixed
