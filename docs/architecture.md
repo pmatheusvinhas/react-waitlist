@@ -179,18 +179,23 @@ For detailed configuration options, see the [API Reference](./api.md).
 
 ## Framework Integration
 
-React Waitlist provides adapters for various CSS frameworks:
+React Waitlist provides adapters for popular CSS frameworks:
 
 ```mermaid
 graph TD
     A[Framework Adapters] --> B[Default]
     A --> C[Tailwind CSS]
     A --> D[Material UI]
-    A --> E[Bootstrap]
-    A --> F[Custom]
+    A --> E[Custom]
 ```
 
-These adapters transform the component's theme configuration to match the target framework's styling conventions.
+These adapters transform the component's theme configuration to match the target framework's styling conventions. Currently, we provide built-in support for:
+
+- **Default**: A clean, neutral styling that works well in most contexts
+- **Tailwind CSS**: Optimized for use with Tailwind CSS classes
+- **Material UI**: Follows Material Design guidelines 
+
+You can also create custom adapters for your preferred framework or design system.
 
 ## Module Dependency
 

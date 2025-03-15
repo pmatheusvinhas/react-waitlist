@@ -1,6 +1,6 @@
 # React Waitlist
 
-A lightweight, customizable waitlist component for React applications with Resend integration.
+A customizable waitlist component for React applications with Resend integration.
 
 ## Overview
 
@@ -24,13 +24,16 @@ The component is designed to be:
     - [Setting Up Proxy Endpoints](#setting-up-proxy-endpoints)
       - [Next.js Example](#nextjs-example)
   - [Features](#features)
+  - [Examples](#examples)
+    - [Vite with Proxy Example](#vite-with-proxy-example)
+    - [Vite Direct Example](#vite-direct-example)
   - [Architecture](#architecture)
   - [Security](#security)
     - [Honeypot Fields](#honeypot-fields)
     - [Submission Time Checks](#submission-time-checks)
     - [Google reCAPTCHA v3](#google-recaptcha-v3)
     - [Rate Limiting](#rate-limiting)
-  - [Examples](#examples)
+  - [Documentation](#documentation)
   - [License](#license)
 
 ## Installation
@@ -148,6 +151,34 @@ export default async function recaptchaProxyHandler(req, res) {
 - **Event Handlers**: React to form events (focus, submit, success, error)
 - **Framework Compatibility**: Adapters for popular CSS frameworks
 
+## Examples
+
+Explore our example implementations to see React Waitlist in action:
+
+### Vite with Proxy Example
+
+The [Vite Proxy Example](./examples/vite-proxy) demonstrates the recommended approach for production applications, using proxy endpoints to securely handle API requests without exposing your API keys.
+
+Key features:
+- Backend Express server with proxy endpoints
+- Proper environment variable separation
+- CORS protection and error handling
+- Complete implementation of all security features
+
+[View Vite Proxy Example →](./examples/vite-proxy)
+
+### Vite Direct Example
+
+The [Vite Direct Example](./examples/vite-direct) demonstrates direct API usage, which is simpler but less secure and only recommended for development or testing.
+
+Key features:
+- Direct integration with Resend API
+- No backend server required
+- Complete event logging system
+- All form fields and customization options
+
+[View Vite Direct Example →](./examples/vite-direct)
+
 ## Architecture
 
 React Waitlist is built with a modular architecture that separates concerns:
@@ -233,38 +264,13 @@ createResendProxy({
 
 For more details, see the [Security Documentation](./security.md).
 
-## Examples
+## Documentation
 
-```jsx
-import { WaitlistForm } from 'react-waitlist';
+Comprehensive documentation is available to help you get the most out of React Waitlist:
 
-function App() {
-  return (
-    <WaitlistForm
-      title="Join Our Waitlist"
-      description="Be the first to know when we launch."
-      submitText="Join Now"
-      
-      // Resend integration
-      resendAudienceId="YOUR_AUDIENCE_ID"
-      resendProxyEndpoint="/api/resend-proxy"
-      
-      // Security features
-      security={{
-        enableHoneypot: true,
-        checkSubmissionTime: true,
-        enableReCaptcha: true,
-        reCaptchaSiteKey: "YOUR_RECAPTCHA_SITE_KEY",
-        recaptchaProxyEndpoint: "/api/recaptcha-proxy"
-      }}
-      
-      // Event handlers
-      onSuccess={(data) => console.log('Success:', data)}
-      onError={(data) => console.error('Error:', data)}
-    />
-  );
-}
-```
+- [API Reference](./api.md): Complete API documentation
+- [Architecture](./architecture.md): Details about the component's architecture
+- [Security](./security.md): Security features and best practices
 
 ## License
 
