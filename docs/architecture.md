@@ -1,210 +1,216 @@
 # Architecture
 
-React Waitlist is designed with a modular architecture that separates concerns and promotes maintainability.
+This document provides an in-depth look at the architecture of the React Waitlist component.
 
-## Core Modules Architecture
+## High-Level Overview
 
-The library is built around a set of core modules, each with a specific responsibility:
-
-```mermaid
-graph TD
-    A[Application] --> B[Components]
-    B --> C[Core Modules]
-    
-    C --> D[types]
-    C --> E[events]
-    C --> F[validation]
-    C --> G[security]
-    C --> H[analytics]
-    C --> I[webhook]
-    C --> J[recaptcha]
-    
-    D -.-> E
-    D -.-> F
-    D -.-> G
-    D -.-> H
-    D -.-> I
-    D -.-> J
-```
-
-### Core Modules
-
-- **core/types**: Type definitions for the entire library
-- **core/events**: Event system for tracking user interactions
-- **core/validation**: Form validation logic
-- **core/security**: Security features like honeypot fields and bot detection
-- **core/analytics**: Analytics tracking integrations
-- **core/webhook**: Webhook handling for external integrations
-- **core/recaptcha**: reCAPTCHA integration
-
-This modular approach allows for better maintainability, testability, and tree-shaking.
-
-## Component Architecture
-
-The component architecture follows a modular approach with three main integration methods:
-
-### 1. Server-Side Rendering (SSR) Architecture
-
-For frameworks with server-side rendering support (Next.js App Router, Remix, etc.):
+React Waitlist is designed with a modular architecture that separates concerns, making it easy to maintain and extend. The main components are:
 
 ```mermaid
 graph TD
-    A[Next.js App Router] --> B[ServerWaitlist]
-    B --> C[Placeholder with Serialized Props]
-    A --> D[ClientWaitlist]
-    D --> E[Hydration]
-    E --> F[WaitlistForm]
-    F --> G[Core Modules]
+    A[WaitlistForm Component] --> B[Core Logic]
+    A --> C[UI Rendering]
+    B --> D[Validation]
+    B --> E[Security]
+    B --> F[Events]
+    A --> G[Hooks]
+    G --> H[useResendAudience]
+    G --> I[useReCaptcha]
+    G --> J[useWaitlistEvents]
+    A --> K[Accessibility]
+    K --> L[AriaProvider]
+    K --> M[Screen Reader]
+    N[Server] --> O[Proxy Endpoints]
+    O --> P[Resend API]
+    O --> Q[reCAPTCHA API]
+    O --> R[Webhook Handler]
 ```
 
-This architecture consists of two main components:
+## Component Structure
 
-1. **ServerWaitlist (Server Component)**: 
-   - Runs exclusively on the server
-   - Securely handles API keys and sensitive configuration
-   - Renders a placeholder with serialized props
-   - No React hooks or client-side code
-   - Imported from `react-waitlist/server`
-
-2. **ClientWaitlist (Client Component)**:
-   - Has the `'use client'` directive
-   - Hydrates the placeholder rendered by ServerWaitlist
-   - Handles all client-side interactivity
-   - Uses React hooks for state management
-   - Imported from `react-waitlist/client`
-
-### 2. Client-Side with Security Utilities
-
-For client-side React applications:
+### Main Components
 
 ```mermaid
 graph TD
-    A[React Application] --> B[WaitlistForm]
-    B --> C[Core Modules]
-    B --> D[API Requests]
-    D --> E[Proxy Endpoints]
-    E --> F[Resend API]
+    A[WaitlistForm] --> B[WaitlistFormInner]
+    B --> C[AriaProvider]
+    C --> D[Form Fields]
+    C --> E[Submit Button]
+    C --> F[Success Message]
+    C --> G[Error Message]
 ```
 
-### 3. Custom Integration
+The `WaitlistForm` is the main exported component that users interact with. It wraps the `WaitlistFormInner` component with an `AriaProvider` for accessibility support.
 
-For applications with existing backend systems:
+## Core Logic
+
+The core logic is organized into the following modules:
+
+```mermaid
+graph LR
+    A[Core] --> B[Types]
+    A --> C[Validation]
+    A --> D[Security]
+    A --> E[Events]
+    A --> F[Theme]
+    A --> G[Animations]
+    A --> H[Fonts]
+    A --> I[Adapters]
+    A --> J[reCAPTCHA]
+    A --> K[Webhook]
+```
+
+- **Types**: TypeScript interfaces and types for the component API
+- **Validation**: Form validation logic
+- **Security**: Bot protection and security measures
+- **Events**: Event handling and custom events
+- **Theme**: Theming and styling utilities
+- **Animations**: Animation utilities
+- **Fonts**: Font loading utilities
+- **Adapters**: Framework adapters for different UI libraries
+- **reCAPTCHA**: Google reCAPTCHA integration
+- **Webhook**: Webhook handling
+
+## Hooks
+
+Custom React hooks provide functionality for different aspects of the component:
 
 ```mermaid
 graph TD
-    A[React Application] --> B[WaitlistForm]
-    B --> C[Core Modules]
-    B --> D[Event Callbacks]
-    D --> E[Your Custom Backend]
+    A[Hooks] --> B[useResendAudience]
+    A --> C[useReCaptcha]
+    A --> D[useWaitlistEvents]
+    A --> E[useWaitlistForm]
+    B --> F[Resend API]
+    C --> G[reCAPTCHA API]
+    D --> H[Event Bus]
+    E --> B
+    E --> C
+    E --> D
 ```
 
-## Package Structure
+- **useResendAudience**: Manages integration with Resend audiences
+- **useReCaptcha**: Handles reCAPTCHA verification
+- **useWaitlistEvents**: Provides event handling functionality
+- **useWaitlistForm**: Combines the above hooks for form handling
 
-The package is organized into several directories:
+## Server-Side Components
 
-```
-react-waitlist/
-├── src/
-│   ├── components/       # React components
-│   │   ├── WaitlistForm.tsx
-│   │   └── ...
-│   ├── core/             # Core modules
-│   │   ├── types.ts
-│   │   ├── events.ts
-│   │   ├── validation.ts
-│   │   ├── security.ts
-│   │   ├── analytics.ts
-│   │   ├── webhook.ts
-│   │   └── recaptcha.ts
-│   ├── hooks/            # React hooks
-│   │   ├── useWaitlistForm.ts
-│   │   ├── useWaitlistEvents.ts
-│   │   └── ...
-│   ├── server/           # Server-side components and utilities
-│   │   ├── serverComponent.tsx
-│   │   ├── proxy.ts
-│   │   └── ...
-│   ├── styles/           # Styling utilities
-│   │   ├── theme.ts
-│   │   └── ...
-│   └── a11y/             # Accessibility utilities
-│       ├── AriaProvider.tsx
-│       └── ...
-├── client.ts             # Client-side entry point
-└── server.ts             # Server-side entry point
+The server-side components provide proxy endpoints for secure API access:
+
+```mermaid
+graph TD
+    A[Server] --> B[Proxy]
+    A --> C[reCAPTCHA Proxy]
+    A --> D[Webhook Proxy]
+    B --> E[Resend API]
+    C --> F[reCAPTCHA API]
+    D --> G[Custom Webhooks]
 ```
 
-## Export Structure
-
-The package provides multiple entry points:
-
-1. **react-waitlist**: The main package with the `WaitlistForm` component
-   ```jsx
-   import { WaitlistForm } from 'react-waitlist';
-   ```
-
-2. **react-waitlist/server**: Server-side components and utilities
-   ```jsx
-   import { ServerWaitlist, createResendProxy } from 'react-waitlist/server';
-   ```
-
-3. **react-waitlist/client**: Client-side components for hydration
-   ```jsx
-   import { ClientWaitlist } from 'react-waitlist/client';
-   ```
+- **Proxy**: Proxies requests to the Resend API
+- **reCAPTCHA Proxy**: Verifies reCAPTCHA tokens without exposing the secret key
+- **Webhook Proxy**: Handles webhook requests
 
 ## Data Flow
 
-### Event System
+The following diagram shows the flow of data through the component:
 
-The event system is a core part of the architecture, allowing for integration with analytics and external systems:
+```mermaid
+sequenceDiagram
+    participant User
+    participant Form
+    participant Validation
+    participant Security
+    participant ResendHook
+    participant RecaptchaHook
+    participant Proxy
+    participant Resend
+    participant reCAPTCHA
+
+    User->>Form: Fill form & submit
+    Form->>Validation: Validate input
+    Validation-->>Form: Validation result
+    
+    alt if valid
+        Form->>Security: Check for bots
+        Security->>RecaptchaHook: Verify user
+        RecaptchaHook->>reCAPTCHA: Get token
+        reCAPTCHA-->>RecaptchaHook: Token
+        RecaptchaHook->>Proxy: Verify token
+        Proxy->>reCAPTCHA: Verify with secret
+        reCAPTCHA-->>Proxy: Verification result
+        Proxy-->>RecaptchaHook: Verification result
+        RecaptchaHook-->>Security: Human/bot result
+        
+        alt if human
+            Form->>ResendHook: Add to audience
+            ResendHook->>Proxy: Send contact data
+            Proxy->>Resend: Add contact
+            Resend-->>Proxy: Success/error
+            Proxy-->>ResendHook: Success/error
+            ResendHook-->>Form: Success/error
+            Form-->>User: Success message
+        else if bot
+            Security-->>Form: Bot detected
+            Form-->>User: Error message
+        end
+    else if invalid
+        Form-->>User: Validation error
+    end
+```
+
+## Configuration Options
+
+The component can be configured with various options:
 
 ```mermaid
 graph TD
-    A[User Action] --> B[EventBus]
-    B --> C{Event Type}
-    C -->|field_focus| D[Field Focus Handler]
-    C -->|submit| E[Submit Handler]
-    C -->|success| F[Success Handler]
-    C -->|error| G[Error Handler]
-    
-    D --> H[Analytics]
-    E --> H
-    F --> H
-    G --> H
-    
-    F --> I[Webhooks]
-    G --> I
+    A[Configuration] --> B[Form Fields]
+    A --> C[Theming]
+    A --> D[Security]
+    A --> E[Accessibility]
+    A --> F[Events]
+    A --> G[Resend Integration]
+    A --> H[Webhooks]
 ```
 
-The event system uses a publish-subscribe pattern, allowing components to subscribe to specific events and react accordingly.
+For detailed configuration options, see the [API Reference](./api.md).
 
-## Security Architecture
+## Framework Integration
 
-React Waitlist implements multiple layers of security:
+React Waitlist provides adapters for various CSS frameworks:
 
-1. **API Key Protection**: Server-side components and proxy endpoints keep API keys secure
-2. **Bot Protection**: Honeypot fields, submission timing checks, and reCAPTCHA integration
-3. **Data Validation**: Both client and server-side validation of form data
-4. **CORS Protection**: Proxy endpoints implement CORS protection
-5. **Rate Limiting**: Optional rate limiting on proxy endpoints
+```mermaid
+graph TD
+    A[Framework Adapters] --> B[Default]
+    A --> C[Tailwind CSS]
+    A --> D[Material UI]
+    A --> E[Bootstrap]
+    A --> F[Custom]
+```
 
-## Accessibility Architecture
+These adapters transform the component's theme configuration to match the target framework's styling conventions.
 
-Accessibility is built into the component architecture:
+## Module Dependency
 
-1. **ARIA Attributes**: Proper ARIA roles, states, and properties
-2. **Keyboard Navigation**: Full keyboard support
-3. **Screen Reader Support**: Announcements for form state changes
-4. **Reduced Motion Support**: Respects user preferences for reduced motion
-5. **Focus Management**: Proper focus handling for form submission and errors
+The dependency graph shows how the modules depend on each other:
 
-## Testing Architecture
+```mermaid
+graph TD
+    A[WaitlistForm] --> B[Core Types]
+    A --> C[Hooks]
+    A --> D[A11y]
+    C --> B
+    D --> B
+    A --> E[Security]
+    E --> B
+    A --> F[Validation]
+    F --> B
+    A --> G[Events]
+    G --> B
+    A --> H[Theme]
+    H --> B
+```
 
-The testing architecture follows the modular approach:
-
-1. **Unit Tests**: Test individual modules in isolation
-2. **Integration Tests**: Test components working together
-3. **End-to-End Tests**: Test the full user flow
-
-Each core module has its own set of unit tests, ensuring that the functionality works as expected. 
+This modular design allows for easy maintenance and extension of the component. 
